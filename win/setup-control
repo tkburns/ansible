@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# install python 3
+sudo apt install python3
+
+# install ansible
+sudo apt install software-properties-common
+sudo apt-add-repository --yes --update ppa:ansible/ansible
+sudo apt install ansible
+
