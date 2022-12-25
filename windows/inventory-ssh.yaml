@@ -1,0 +1,8 @@
+---
+
+plugin: 'wsl-windows-inventory'
+group: windows
+vars:
+  ansible_connection: ssh
+  ansible_shell_type: powershell
+
