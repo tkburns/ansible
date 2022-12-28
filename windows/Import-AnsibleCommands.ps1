@@ -11,7 +11,10 @@
 # (or use -Scope CurrentUser to make it persistent)
 
 # TODO List
+# - standardize API (use 'Protocol' param everywhere?)
 # - add 'WhatIf' param
+# - add function to update firewall rules
+# (wsl doesn't have static ip, and network interface is re-created on each startup)
 
 function Install-Ansible {
     [CmdletBinding(SupportsShouldProcess)]
@@ -38,7 +41,7 @@ function Install-Ansible {
         wsl --install
     }
 
-    if ($SeuptWinRM) {
+    if ($SetupWinRM) {
 
         ##########
         #
@@ -52,9 +55,9 @@ function Install-Ansible {
         New-WSManInstance -ResourceURI 'winrm/config/Listener' -SelectorSet @{ Transport = "HTTPS"; Address = "*" } -ValueSet @{ Hostname = 'ansible.windows'; CertificateThumbprint = $cert.Thumbprint }
 
         # setup firewall
-        Disable-NetFirewallRule -DisplayName 'Windows Remote Management (HTTP-In)'
-        New-NetFirewallRule -DisplayName "Ansible - WinRM HTTPS (WSL)" -Group Ansible -Direction Inbound -Action Allow -Protocol TCP -LocalPort 5986 -Profile Any -InterfaceAlias "vEthernet (WSL)"
-
+        Disable-NetFirewallRule -Name 'WINRM-HTTP-In-TCP-NoScope'
+        Disable-NetFirewallRule -Name 'WINRM-HTTP-In-TCP'
+        Add-AnsibleFirewallRule -Protocol 'WinRM'
     }
 
     if ($SetupSSH) {
@@ -73,8 +76,7 @@ function Install-Ansible {
 
         # create firewall rule
         Disable-NetFirewallRule -DisplayName 'OpenSSH SSH Server Preview (sshd)'
-        # -Name "OpenSSH-Server-In-TCP"
-        New-NetFirewallRule -DisplayName "Ansible - SSH (WSL)" -Group Ansible -Direction Inbound -Action Allow -Protocol TCP -LocalPort 22 -Profile Any -Program "C:\Program Files\OpenSSH\sshd.exe" -InterfaceAlias "vEthernet (WSL)"
+        Add-AnsibleFirewallRule -Protocol 'SSH'
     
     }
 
@@ -99,6 +101,7 @@ function Install-Ansible {
     wsl -- pip3 install pywinrm
 
 }
+
 
 function Uninstall-Ansible {
     [CmdletBinding()]
@@ -127,7 +130,7 @@ function Uninstall-Ansible {
 
     if ($CleanFirewall) {
         # delete firewall rules
-        Remove-NetFirewallRule -Group 'Ansible'
+        Remove-AnsibleFirewallRule
     }
 
     if ($CleanWinRM) {
@@ -160,7 +163,7 @@ function Uninstall-Ansible {
         if ($WSLDistro -ne $null) {
             # unregister provided distro
             wsl --unregister $WSLDistro
-        } elseif ($Distro -eq $null) {
+        } else {
             # unregister default distro
             $DefaultDistroMatch = (wsl --list | Select-String '(.*) \(Default\)')
             if ($DefaultDistroMatch.Matches -ne $null) {
@@ -183,13 +186,24 @@ function Uninstall-Ansible {
     }
 }
 
+
 function Get-AnsibleConnectionInfo {
+    Param(
+        [Parameter(Mandatory=$false)]
+        [string]$WSLDistro
+    )
+
+    if ($WSLDistro) {
+        $distroFlag = "-d $WSLDistro"
+    }
+
     $windowsIp = (Get-NetIPConfiguration "vEthernet (WSL)").IPv4Address.IPAddress
-    $wslIp = wsl hostname -I
+    $wslIp = wsl $distroFlag -- hostname -I
 
     # TODO - create a class???
     @{ windowsIp=$windowsIp; wslIp=$wslIp }
 }
+
 
 function Disable-AnsibleConnection {
     [CmdletBinding()]
@@ -219,11 +233,12 @@ function Disable-AnsibleConnection {
     }
 
     if ($DisableSSH) {
-        # disable SSH
+        # disable SSH service
         Stop-Service sshd
         Set-Service -Name sshd -StartupType 'Disabled'
     }
 }
+
 
 function Enable-AnsibleConnection {
     [CmdletBinding()]
@@ -247,13 +262,13 @@ function Enable-AnsibleConnection {
         # enable powershell remoting/winrm
         Enable-PSRemoting
 
-        # disable the winrm service
+        # enable the winrm service
         Start-Service winrm
         Set-Service -Name winrm -StartupType Automatic
     }
 
     if ($EnableSSH) {
-        # enable SSH
+        # enable SSH service
         Start-Service sshd
         Set-Service -Name sshd -StartupType 'Automatic'
     }
@@ -262,8 +277,72 @@ function Enable-AnsibleConnection {
 
 ##########
 #
+# Firewall
+#
+
+function Get-AnsibleFirewallRule {
+    [CmdletBinding()]
+    Param(
+        [ValidateSet('WinRM', 'SSH')]
+        [string]$Protocol
+    )
+
+    $rules = Get-NetFirewallRule -Group "Ansible"
+
+    if ($Protocol -eq 'WinRM') {
+        $rules = $rules | Where-Object { $_.DisplayName -like "*WinRM*" }
+    } elseif ($Protocol -eq 'SSH') {
+        $rules = $rules | Where-Object { $_.DisplayName -like "*SSH*" }
+    }
+
+    $rules
+}
+
+function Add-AnsibleFirewallRule {
+    [CmdletBinding()]
+    Param(
+        [ValidateSet('WinRM', 'SSH')]
+        [string]$Protocol
+    )
+
+    if (($Protocol -eq 'WinRM') -or ($Protocol -eq $null)) {
+        New-NetFirewallRule -DisplayName "Ansible - WinRM HTTPS (WSL)" -Group Ansible -Direction Inbound -Action Allow -Protocol TCP -LocalPort 5986 -Profile Any -InterfaceAlias "vEthernet (WSL)"
+
+    }
+
+    if (($Protocol -eq 'SSH') -or ($Protocol -eq $null)) {
+        New-NetFirewallRule -DisplayName "Ansible - SSH (WSL)" -Group Ansible -Direction Inbound -Action Allow -Protocol TCP -LocalPort 22 -Profile Any -Program "C:\Program Files\OpenSSH\sshd.exe" -InterfaceAlias "vEthernet (WSL)"
+    }
+}
+
+
+function Remove-AnsibleFirewallRule {
+    [CmdletBinding()]
+    Param(
+        [ValidateSet('WinRM', 'SSH')]
+        [string]$Protocol
+    )
+
+    Get-AnsibleFirewallRule -Protocol $Protocol | Remove-NetFirewallRule
+}
+
+
+function Repair-AnsibleFirewallRule {
+    [CmdletBinding()]
+    Param(
+        [ValidateSet('WinRM', 'SSH')]
+        [string]$Protocol
+    )
+
+    Get-AnsibleFirewallRule -Protocol $Protocol | Set-NetFirewallRule -InterfaceAlias 'vEthernet (WSL)'
+}
+
+
+##########
+#
 # Utils
 #
+
 
 function Repair-WslEncoding {
     $env:WSL_UTF8 = 1
