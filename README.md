@@ -28,7 +28,7 @@ This repos is setup with playbooks for a couple of different systems: Windows, W
 > firewall rule (wsl uses a dynamic network interface an IP, which gets recreated when wsl is rebooted).
 >
 > ```pwsh
-> Repair-AnsibleFirewallRule
+> $ Repair-AnsibleFirewallRule
 > ```
 
 ### WSL
