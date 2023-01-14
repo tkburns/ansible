@@ -21,7 +21,7 @@ This repos is setup with playbooks for a couple of different systems: Windows, W
 
 3. Run the playbook
     ```pwsh
-    $ ansible pull _ 
+    $ Invoke-AnsiblePlaybook
     ```
 
 > When running the playbook when ansible has already been installed, you may have to update the

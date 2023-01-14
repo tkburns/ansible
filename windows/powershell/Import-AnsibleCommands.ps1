@@ -178,31 +178,62 @@ function Uninstall-Ansible {
             }
         }
     } elseif ($CleanWSL) {
+        [string[]] $wslExtraArgs = @()
         if ($WSLDistro) {
-            $distroFlag = "-d $WSLDistro"
+            $wslExtraArgs += "-d", "$WSLDistro"
         }
 
         # remove just ansible-specific things
-        wsl $distroFlag -- `
+        wsl $wslExtraArgs -- `
           pip3 uninstall pywinrm '&&' `
           sudo apt uninstall ansible '&&' `
           sudo apt-add-repository -r ppa:ansible/ansible
     }
 }
 
+function Invoke-AnsiblePlaybook {
+    [CmdletBinding()]
+    Param(
+        [ValidateSet('WinRM', 'SSH')]
+        [string]$Protocol = 'WinRM',
+
+        [string]$WSLDistro
+    )
+
+    [string[]] $wslExtraArgs = @()
+    if ($WSLDistro) {
+        $wslExtraArgs += "-d", "$WSLDistro"
+    }
+
+    if ($Protocol -eq 'WinRM') {
+        $inventoryFile = 'windows/inventory-winrm.yml'
+    } elseif ($Protocol -eq 'SSH') {
+        $inventoryFile = 'windows/inventory-ssh.yml'
+    }
+
+    wsl $wslExtraArgs -- ansible-pull windows/playbook.yml -i $inventoryFile --url https://github.com/tkburns/ansible.git
+}
+
+
+##########
+#
+# Connection
+#
 
 function Get-AnsibleConnectionInfo {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false)]
         [string]$WSLDistro
     )
 
+    [string[]] $wslExtraArgs = @()
     if ($WSLDistro) {
-        $distroFlag = "-d $WSLDistro"
+        $wslExtraArgs += "-d", "$WSLDistro"
     }
 
     $windowsIp = (Get-NetIPConfiguration "vEthernet (WSL)").IPv4Address.IPAddress
-    $wslIp = wsl $distroFlag -- hostname -I
+    $wslIp = wsl $wslExtraArgs -- hostname -I
 
     [PSCustomObject] @{ windowsIp=$windowsIp; wslIp=$wslIp }
 }
