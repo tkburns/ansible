@@ -14,8 +14,6 @@
 # - Use splatting for optional params
 # - standardize API (use 'Protocol' param everywhere?)
 # - add 'WhatIf' param
-# - add function to update firewall rules
-# (wsl doesn't have static ip, and network interface is re-created on each startup)
 
 function Install-Ansible {
     [CmdletBinding(SupportsShouldProcess)]
@@ -206,8 +204,7 @@ function Get-AnsibleConnectionInfo {
     $windowsIp = (Get-NetIPConfiguration "vEthernet (WSL)").IPv4Address.IPAddress
     $wslIp = wsl $distroFlag -- hostname -I
 
-    # TODO - create a class???
-    @{ windowsIp=$windowsIp; wslIp=$wslIp }
+    [PSCustomObject] @{ windowsIp=$windowsIp; wslIp=$wslIp }
 }
 
 
@@ -330,9 +327,9 @@ function Remove-AnsibleFirewallRule {
     )
 
     if ($Protocol) {
-	$rules = Get-AnsibleFirewallRule -Protocol $Protocol
+        $rules = Get-AnsibleFirewallRule -Protocol $Protocol
     } else {
-	$rules = Get-AnsibleFirewallRule
+        $rules = Get-AnsibleFirewallRule
     }
 
     $rules | Remove-NetFirewallRule
@@ -347,9 +344,9 @@ function Repair-AnsibleFirewallRule {
     )
 
     if ($Protocol) {
-	$rules = Get-AnsibleFirewallRule -Protocol $Protocol
+        $rules = Get-AnsibleFirewallRule -Protocol $Protocol
     } else {
-	$rules = Get-AnsibleFirewallRule
+        $rules = Get-AnsibleFirewallRule
     }
 
     $rules | Set-NetFirewallRule -InterfaceAlias 'vEthernet (WSL)'
