@@ -1,14 +1,14 @@
 # Requirements:
 # - PowerShell >= 3.0
 # - .NET >= 4.0
-# - PS Scripts enabled (ExecutionPolicy)
 #
 # Any modern windows desktop should meet the PowerShell & .NET
 # requirements out of the box
 #
-# Enable scripts via the following:
-# > Set-ExecutionPolicy RemoteSigned -Scope Process
-# (or use -Scope CurrentUser to make it persistent)
+# If you are running this by downloading it to a local file,
+# enable running unsigned scripts via the following:
+# > Set-ExecutionPolicy Bypass -Scope Process
+# (wht -Scope Process it only affects the current process)
 
 # TODO List
 # - Use splatting for optional params

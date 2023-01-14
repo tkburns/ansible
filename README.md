@@ -9,22 +9,17 @@ This repos is setup with playbooks for a couple of different systems: Windows, W
 
 ### Windows
 
-1. Enable PowerShell Scripts
+1. Source the Ansible commands
     ```pwsh
-    $ Set-ExecutionPolicy Bypass -Scope CurrentUser
+    $ Invoke-Expression (Invoke-WebRequest https://raw.githubusercontent.com/tkburns/ansible/main/windows/powershell/Import-AnsibleCommands.ps1).Content
     ```
 
-2. Source the Ansible commands
-    ```pwsh
-    $ Invoke-Expression (Invoke-WebRequest _).Content
-    ```
-
-3. Setup the Ansible pre-reqs
+2. Setup everything needed for Ansible to run (WSL, WinRM, Firewall rules, etc)
     ```pwsh
     $ Install-Ansible
     ```
 
-4. Run the playbook
+3. Run the playbook
     ```pwsh
     $ ansible pull _ 
     ```
