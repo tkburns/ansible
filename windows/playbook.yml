@@ -1,0 +1,15 @@
+- hosts: windows
+  vars:
+    ansible_connection: winrm
+    ansible_winrm_transport: ntlm
+  vars_prompt:
+    - name: ansible_user
+      prompt: "user"
+      private: no
+    - name: ansible_password
+      prompt: "password"
+  tasks:
+    - name: install power toys
+      win_winget:
+        id: microsoft.powertoys
+
