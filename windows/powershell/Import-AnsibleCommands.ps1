@@ -11,6 +11,7 @@
 # (or use -Scope CurrentUser to make it persistent)
 
 # TODO List
+# - Use splatting for optional params
 # - standardize API (use 'Protocol' param everywhere?)
 # - add 'WhatIf' param
 # - add function to update firewall rules
@@ -20,13 +21,13 @@ function Install-Ansible {
     [CmdletBinding(SupportsShouldProcess)]
     Param(
         [Parameter(Mandatory=$false)]
-        [switch]SetupWinRM = $true
+        [switch]$SetupWinRM = $true,
 
         [Parameter(Mandatory=$false)]
-        [switch]SetupSSH
+        [switch]$SetupSSH,
 
         [Parameter(Mandatory=$false)]
-        [string]WSLDistro
+        [string]$WSLDistro
     )
 
     ##########
@@ -36,7 +37,7 @@ function Install-Ansible {
 
     # install wsl
     if ($WSLDistro) {
-        wsl --install -d ${WSLDistro}
+        wsl --install $WSLDistro
     } else {
         wsl --install
     }
@@ -86,19 +87,24 @@ function Install-Ansible {
     # Install Ansible on WSL (Ubuntu) for controlling windows
     #
 
+    [string[]] $wslExtraArgs = @()
+    if ($WSLDistro) {
+        $wslExtraArgs += "-d", "$WSLDistro"
+    }
+
     # install ansible
-    wsl -- `
+    wsl $wslExtraArgs -- `
       sudo apt install -y software-properties-common '&&' `
       sudo apt-add-repository --yes --update ppa:ansible/ansible '&&' `
       sudo apt install -y python3 python3-pip ansible
 
     # install ansible command completion
-    wsl -- `
+    wsl $wslExtraArgs -- `
       pip3 install argcomplete '&&' `
       activate-global-python-argcomplete --user
 
     # install winrm
-    wsl -- pip3 install pywinrm
+    wsl $wslExtraArgs -- pip3 install pywinrm
 
 }
 
@@ -107,22 +113,22 @@ function Uninstall-Ansible {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false)]
-        [switch]$CleanFirewall = $true
+        [switch]$CleanFirewall = $true,
 
         [Parameter(Mandatory=$false)]
-        [switch]$DisableWinRM = $true
+        [switch]$DisableWinRM = $true,
 
         [Parameter(Mandatory=$false)]
-        [switch]$CleanWinRM = $true
+        [switch]$CleanWinRM = $true,
 
         [Parameter(Mandatory=$false)]
-        [switch]$UninstallSSH = $true
+        [switch]$UninstallSSH = $true,
 
         [Parameter(Mandatory=$false)]
-        [switch]$CleanWSL
+        [switch]$CleanWSL,
 
         [Parameter(Mandatory=$false)]
-        [switch]$RemoveWSL
+        [switch]$RemoveWSL,
 
         [Parameter(Mandatory=$false)]
         [string]$WSLDistro
@@ -209,10 +215,10 @@ function Disable-AnsibleConnection {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false)]
-        [switch]$DisableFirewall = $true
+        [switch]$DisableFirewall = $true,
 
         [Parameter(Mandatory=$false)]
-        [switch]$DisableWinRM = $true
+        [switch]$DisableWinRM = $true,
 
         [Parameter(Mandatory=$false)]
         [switch]$DisableSSH = $true
@@ -244,10 +250,10 @@ function Enable-AnsibleConnection {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$false)]
-        [switch]$EnableFirewall = $true
+        [switch]$EnableFirewall = $true,
 
         [Parameter(Mandatory=$false)]
-        [switch]$EnableWinRM = $true
+        [switch]$EnableWinRM = $true,
 
         [Parameter(Mandatory=$false)]
         [switch]$EnableSSH = $true
@@ -305,12 +311,12 @@ function Add-AnsibleFirewallRule {
         [string]$Protocol
     )
 
-    if (($Protocol -eq 'WinRM') -or ($Protocol -eq $null)) {
+    if (($Protocol -eq 'WinRM') -or -not $Protocol) {
         New-NetFirewallRule -DisplayName "Ansible - WinRM HTTPS (WSL)" -Group Ansible -Direction Inbound -Action Allow -Protocol TCP -LocalPort 5986 -Profile Any -InterfaceAlias "vEthernet (WSL)"
 
     }
 
-    if (($Protocol -eq 'SSH') -or ($Protocol -eq $null)) {
+    if (($Protocol -eq 'SSH') -or -not $Protocol) {
         New-NetFirewallRule -DisplayName "Ansible - SSH (WSL)" -Group Ansible -Direction Inbound -Action Allow -Protocol TCP -LocalPort 22 -Profile Any -Program "C:\Program Files\OpenSSH\sshd.exe" -InterfaceAlias "vEthernet (WSL)"
     }
 }
@@ -323,7 +329,13 @@ function Remove-AnsibleFirewallRule {
         [string]$Protocol
     )
 
-    Get-AnsibleFirewallRule -Protocol $Protocol | Remove-NetFirewallRule
+    if ($Protocol) {
+	$rules = Get-AnsibleFirewallRule -Protocol $Protocol
+    } else {
+	$rules = Get-AnsibleFirewallRule
+    }
+
+    $rules | Remove-NetFirewallRule
 }
 
 
@@ -334,7 +346,13 @@ function Repair-AnsibleFirewallRule {
         [string]$Protocol
     )
 
-    Get-AnsibleFirewallRule -Protocol $Protocol | Set-NetFirewallRule -InterfaceAlias 'vEthernet (WSL)'
+    if ($Protocol) {
+	$rules = Get-AnsibleFirewallRule -Protocol $Protocol
+    } else {
+	$rules = Get-AnsibleFirewallRule
+    }
+
+    $rules | Set-NetFirewallRule -InterfaceAlias 'vEthernet (WSL)'
 }
 
 
