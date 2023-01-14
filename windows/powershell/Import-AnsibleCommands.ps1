@@ -317,8 +317,8 @@ function Enable-AnsibleConnection {
 function Get-AnsibleFirewallRule {
     [CmdletBinding()]
     Param(
-        [ValidateSet('WinRM', 'SSH')]
-        [string]$Protocol
+        [ValidateSet('WinRM', 'SSH', 'All')]
+        [string]$Protocol = 'All'
     )
 
     $rules = Get-NetFirewallRule -Group "Ansible"
@@ -335,16 +335,16 @@ function Get-AnsibleFirewallRule {
 function Add-AnsibleFirewallRule {
     [CmdletBinding()]
     Param(
-        [ValidateSet('WinRM', 'SSH')]
-        [string]$Protocol
+        [ValidateSet('WinRM', 'SSH', 'All')]
+        [string]$Protocol = 'All'
     )
 
-    if (($Protocol -eq 'WinRM') -or -not $Protocol) {
+    if (($Protocol -eq 'WinRM') -or ($Protocol -eq 'All')) {
         New-NetFirewallRule -DisplayName "Ansible - WinRM HTTPS (WSL)" -Group Ansible -Direction Inbound -Action Allow -Protocol TCP -LocalPort 5986 -Profile Any -InterfaceAlias "vEthernet (WSL)"
 
     }
 
-    if (($Protocol -eq 'SSH') -or -not $Protocol) {
+    if (($Protocol -eq 'SSH') -or ($Protocol -eq 'All')) {
         New-NetFirewallRule -DisplayName "Ansible - SSH (WSL)" -Group Ansible -Direction Inbound -Action Allow -Protocol TCP -LocalPort 22 -Profile Any -Program "C:\Program Files\OpenSSH\sshd.exe" -InterfaceAlias "vEthernet (WSL)"
     }
 }
@@ -353,16 +353,11 @@ function Add-AnsibleFirewallRule {
 function Remove-AnsibleFirewallRule {
     [CmdletBinding()]
     Param(
-        [ValidateSet('WinRM', 'SSH')]
-        [string]$Protocol
+        [ValidateSet('WinRM', 'SSH', 'All')]
+        [string]$Protocol = 'All'
     )
 
-    if ($Protocol) {
-        $rules = Get-AnsibleFirewallRule -Protocol $Protocol
-    } else {
-        $rules = Get-AnsibleFirewallRule
-    }
-
+    $rules = Get-AnsibleFirewallRule -Protocol $Protocol
     $rules | Remove-NetFirewallRule
 }
 
@@ -370,16 +365,11 @@ function Remove-AnsibleFirewallRule {
 function Repair-AnsibleFirewallRule {
     [CmdletBinding()]
     Param(
-        [ValidateSet('WinRM', 'SSH')]
-        [string]$Protocol
+        [ValidateSet('WinRM', 'SSH', 'All')]
+        [string]$Protocol = 'All'
     )
 
-    if ($Protocol) {
-        $rules = Get-AnsibleFirewallRule -Protocol $Protocol
-    } else {
-        $rules = Get-AnsibleFirewallRule
-    }
-
+    $rules = Get-AnsibleFirewallRule -Protocol $Protocol
     $rules | Set-NetFirewallRule -InterfaceAlias 'vEthernet (WSL)'
 }
 
