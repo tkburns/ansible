@@ -1,0 +1,15 @@
+- name: Install PowerToys
+  win_winget:
+    id: microsoft.powertoys
+  tags: [package]
+- name: Manual Steps (PowerToys)
+  pause:
+    seconds: 1
+    prompt: |
+      ===============
+        [PowerToys] Manual Steps:
+        - Log in
+        - Sync the settings
+      ===============
+  tags: [manual-steps]
+

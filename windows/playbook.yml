@@ -9,7 +9,6 @@
     - name: ansible_password
       prompt: "password"
   tasks:
-    - name: install power toys
-      win_winget:
-        id: microsoft.powertoys
+    - import_tasks: tasks/system.yml
+      tags: [system]
 
