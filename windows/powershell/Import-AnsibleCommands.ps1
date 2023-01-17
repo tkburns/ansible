@@ -18,11 +18,8 @@
 function Install-Ansible {
     [CmdletBinding(SupportsShouldProcess)]
     Param(
-        [Parameter(Mandatory=$false)]
-        [switch]$SetupWinRM = $true,
-
-        [Parameter(Mandatory=$false)]
-        [switch]$SetupSSH,
+        [ValidateSet('WinRM', 'SSH', 'All')]
+        [string]$Protocol = 'WinRM',
 
         [Parameter(Mandatory=$false)]
         [string]$WSLDistro
@@ -40,7 +37,7 @@ function Install-Ansible {
         wsl --install
     }
 
-    if ($SetupWinRM) {
+    if ($Protocol -in 'WinRM', 'All') {
 
         ##########
         #
@@ -59,7 +56,7 @@ function Install-Ansible {
         Add-AnsibleFirewallRule -Protocol 'WinRM'
     }
 
-    if ($SetupSSH) {
+    if ($Protocol -in 'SSH', 'All') {
 
         ###########
         #
@@ -107,6 +104,9 @@ function Install-Ansible {
 }
 
 
+# TODO - break into multiple functions (eg Remove-AnsibleFirewallRule)
+#        and reduce params here (just protocol & severity (disable, clean, uninstall)? & distro & scope (list - firewall, protocol/connection, wsl/control, etc)?)
+#        - also introduce Disable/Enable-Ansible functions??
 function Uninstall-Ansible {
     [CmdletBinding()]
     Param(
@@ -242,14 +242,11 @@ function Get-AnsibleConnectionInfo {
 function Disable-AnsibleConnection {
     [CmdletBinding()]
     Param(
+        [ValidateSet('WinRM', 'SSH', 'All')]
+        [string]$Protocol = 'All',
+
         [Parameter(Mandatory=$false)]
         [switch]$DisableFirewall = $true,
-
-        [Parameter(Mandatory=$false)]
-        [switch]$DisableWinRM = $true,
-
-        [Parameter(Mandatory=$false)]
-        [switch]$DisableSSH = $true
     )
 
     if ($DisableFirewall) {
@@ -257,7 +254,7 @@ function Disable-AnsibleConnection {
         Set-NetFirewallRule -Group 'Ansible' -Enabled False
     }
 
-    if ($DisableWinRM) {
+    if ($Protocol -in 'WinRM', 'All') {
         # disable powershell remoting
         Disable-PSRemoting
 
@@ -266,7 +263,7 @@ function Disable-AnsibleConnection {
         Set-Service -Name winrm -StartupType Manual
     }
 
-    if ($DisableSSH) {
+    if ($Protocol -in 'SSH', 'All') {
         # disable SSH service
         Stop-Service sshd
         Set-Service -Name sshd -StartupType 'Disabled'
@@ -277,14 +274,11 @@ function Disable-AnsibleConnection {
 function Enable-AnsibleConnection {
     [CmdletBinding()]
     Param(
+        [ValidateSet('WinRM', 'SSH', 'All')]
+        [string]$Protocol = 'All',
+
         [Parameter(Mandatory=$false)]
         [switch]$EnableFirewall = $true,
-
-        [Parameter(Mandatory=$false)]
-        [switch]$EnableWinRM = $true,
-
-        [Parameter(Mandatory=$false)]
-        [switch]$EnableSSH = $true
     )
 
     if ($EnableFirewall) {
@@ -292,7 +286,7 @@ function Enable-AnsibleConnection {
         Set-NetFirewallRule -Group 'Ansible' -Enabled True
     }
 
-    if ($EnableWinRM) {
+    if ($Protocol -in 'WinRM', 'All') {
         # enable powershell remoting/winrm
         Enable-PSRemoting
 
@@ -301,7 +295,7 @@ function Enable-AnsibleConnection {
         Set-Service -Name winrm -StartupType Automatic
     }
 
-    if ($EnableSSH) {
+    if ($Protocol -in 'SSH', 'All') {
         # enable SSH service
         Start-Service sshd
         Set-Service -Name sshd -StartupType 'Automatic'
