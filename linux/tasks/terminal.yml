@@ -2,15 +2,18 @@
   package:
     name: [curl]
     state: present
+  tags: [shell]
 
 - name: Install main dev packages
   package:
     name: [git, neovim]
     state: present
+  tags: [shell]
 
 - name: Install common CLI utils
   package:
     name: [jq, fzf, silversearcher-ag, tree]
     state: present
+  tags: [shell]
 
 

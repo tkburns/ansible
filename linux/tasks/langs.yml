@@ -1,0 +1,31 @@
+- name: Setup NodeJS
+  tags: [js, nodejs, shell]
+  block:
+    - name: Install NVM
+      shell: >
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+      args:
+        creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+
+    - name: Install Node
+      shell: ". /root/.bashrc && nvm install {{ item }}"
+      with_items:
+        - '--lts'
+        - node
+
+- name: Setup Typescript
+  tags: [ts, shell]
+  block:
+    - name: Install Typescript
+      npm:
+        name: typescript
+        global: yes
+
+- name: Setup Haskell
+  tags: [haskell, shell]
+  block:
+    - name: Install Haskell
+      package:
+        name: [ghc, ghc-prof, ghc-doc]
+        state: present
+

@@ -6,9 +6,9 @@
     - name: Setup Terminal
       import_tasks: tasks/terminal.yml
       tags: [terminal]
-#     - name: Setup Langs
-#       import_tasks: tasks/langs.yml
-#       tags: [lang]
+    - name: Setup Langs
+      import_tasks: tasks/langs.yml
+      tags: [lang]
 #     - name: Setup Keys
 #       import_tasks: tasks/keys.yml
 #       tags: [key]
