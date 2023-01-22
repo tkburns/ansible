@@ -1,10 +1,10 @@
-# - name: Install WSL
-#   import_tasks: dev/wsl-install.yml
-#   tags: [wsl, wsl-install]
+- name: Install WSL
+  import_tasks: dev/wsl-install.yml
+  tags: [wsl, wsl-install]
 
-# - name: Run WSL Playbook
-#   import_tasks: dev/wsl-playbook.yml
-#   tags: [wsl, wsl-playbook]
+- name: Run WSL Playbook
+  import_tasks: dev/wsl-playbook.yml
+  tags: [wsl, wsl-playbook]
 
 - name: Install VSCode
   win_winget:
