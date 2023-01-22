@@ -16,7 +16,7 @@
     - name: Everyday tasks
       import_tasks: tasks/everyday.yml
       tags: [everyday]
-#    - name: Dev Environment tasks
-#      import_tasks: tasks/dev.yml
-#      tags: [dev]
+    - name: Dev Environment tasks
+      import_tasks: tasks/dev.yml
+      tags: [dev]
 

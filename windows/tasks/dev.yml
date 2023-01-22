@@ -1,0 +1,35 @@
+# - name: Install WSL
+#   import_tasks: dev/wsl-install.yml
+#   tags: [wsl, wsl-install]
+
+# - name: Run WSL Playbook
+#   import_tasks: dev/wsl-playbook.yml
+#   tags: [wsl, wsl-playbook]
+
+- name: Install VSCode
+  win_winget:
+    id: microsoft.visualstudiocode
+  tags: [application, vscode]
+
+- name: Install VSCode Remote Dev Extensions
+  win_command: code --install-extension ms-vscode-remote.vscode-remote-extensionpack
+  tags: [vscode, wsl]
+
+- name: Setup Powershell
+  import_tasks: dev/powershell.yml
+  tags: [powershell, terminal]
+
+# - name: Setup Dotfiles
+#   import_tasks: dev/dotfiles.yml
+#   tags: [dotfiles]
+
+- name: Manual Steps (VSCode)
+  pause:
+    seconds: 1
+    prompt: |
+      ===============
+        [VSCode] Manual Steps:
+        - Log in to sync the settings
+      ===============
+  tags: [manual-steps]
+
