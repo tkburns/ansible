@@ -1,0 +1,43 @@
+- name: Add Github's ssh key
+  shell: |
+    if ! grep -q 'github.com' "/etc/ssh/ssh_known_hosts"; then
+      ssh-keyscan -H github.com >> /etc/ssh/ssh_known_hosts
+    fi
+
+- name: Create project folder
+  file:
+    path: '{{ project_dir }}'
+    state: folder
+  tags: [folder-tree]
+
+- name: Clone Projects
+  git:
+    repo: 'git@github.com:tkburns/{{ item.repo }}.git'
+    dest: '{{ project_dir }}/{{ item.name }}'
+  with_items:
+    - name: opus
+      repo: opus-prototype
+    - name: ansible
+      repo: ansible
+  tags: [repo]
+
+- name: Setup Gists
+  tags: [gist]
+  block:
+    - name: Create base folder
+      file:
+        path: '{{ project_dir }}/gists'
+        state: folder
+      tags: [folder-tree]
+
+    - name: Clone Gists
+      git:
+        repo: 'git@github.com:{{ item.gist_id }}.git'
+        dest: '{{ project_dir }}/gists/{{ item.name }}'
+      with_items:
+        - name: rs-playground
+          gist_id: 64fc340a54f36220d7f11d2cc8214408
+        - name: type-utils
+          gist_id: 23e58e6b1d4db1a5fbd6a7444a1c307c
+      tags: [repo]
+

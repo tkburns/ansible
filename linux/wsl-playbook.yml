@@ -12,7 +12,7 @@
 #     - name: Setup Keys
 #       import_tasks: tasks/keys.yml
 #       tags: [key]
-#     - name: Setup Projects
-#       import_tasks: tasks/projects.yml
-#       tags: [project]
+    - name: Setup Projects
+      import_tasks: tasks/projects.yml
+      tags: [project]
 
