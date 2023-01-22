@@ -1,0 +1,16 @@
+- name: Install core CLI packages
+  package:
+    name: [curl]
+    state: present
+
+- name: Install main dev packages
+  package:
+    name: [git, neovim]
+    state: present
+
+- name: Install common CLI utils
+  package:
+    name: [jq, fzf, silversearcher-ag, tree]
+    state: present
+
+
