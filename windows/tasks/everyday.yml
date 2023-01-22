@@ -1,0 +1,7 @@
+- name: Install Spotify
+  win_winget:
+    name: 'Spotify Music'
+    source: msstore
+  tags: [application]
+
+
