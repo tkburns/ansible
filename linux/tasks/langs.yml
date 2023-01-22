@@ -21,6 +21,14 @@
         name: typescript
         global: yes
 
+- name: Setup Python
+  tags: [python, shell]
+  block:
+    - name: Install Python
+      package:
+        name: [python3, python3-pip]
+        state: present
+
 - name: Setup Haskell
   tags: [haskell, shell]
   block:
