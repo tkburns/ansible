@@ -1,7 +1,8 @@
 - name: Install PowerToys
   win_winget:
     id: microsoft.powertoys
-  tags: [package]
+  tags: [application]
+
 - name: Manual Steps (PowerToys)
   pause:
     seconds: 1
@@ -12,4 +13,13 @@
         - Sync the settings
       ===============
   tags: [manual-steps]
+
+- name: Install Terminal
+  win_winget:
+    id: microsoft.windowsterminal
+  tags: [application, terminal]
+
+# edit terminal settings - with the dotfiles..?
+# $settings = (Get-Item "C:\users\$env:UserName\AppData\Local\Packages\Microsoft.WindowsTerminal_*\LocalState\settings.json")
+# $settings.DirectoryName
 

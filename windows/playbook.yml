@@ -2,6 +2,7 @@
   vars:
     ansible_connection: winrm
     ansible_winrm_transport: ntlm
+    wsl_distro: Ubuntu
   vars_prompt:
     - name: ansible_user
       prompt: "user"
@@ -9,6 +10,13 @@
     - name: ansible_password
       prompt: "password"
   tasks:
-    - import_tasks: tasks/system.yml
+    - name: System tasks
+      import_tasks: tasks/system.yml
       tags: [system]
+#    - name: Everyday tasks
+#      import_tasks: tasks/everyday.yml
+#      tags: [everyday]
+#    - name: Dev Environment tasks
+#      import_tasks: tasks/dev.yml
+#      tags: [dev]
 
