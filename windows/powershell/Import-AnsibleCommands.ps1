@@ -246,7 +246,7 @@ function Disable-AnsibleConnection {
         [string]$Protocol = 'All',
 
         [Parameter(Mandatory=$false)]
-        [switch]$DisableFirewall = $true,
+        [switch]$DisableFirewall = $true
     )
 
     if ($DisableFirewall) {
@@ -278,7 +278,7 @@ function Enable-AnsibleConnection {
         [string]$Protocol = 'All',
 
         [Parameter(Mandatory=$false)]
-        [switch]$EnableFirewall = $true,
+        [switch]$EnableFirewall = $true
     )
 
     if ($EnableFirewall) {
