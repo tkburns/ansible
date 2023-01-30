@@ -197,12 +197,30 @@ function Invoke-AnsiblePlaybook {
         [ValidateSet('WinRM', 'SSH')]
         [string]$Protocol = 'WinRM',
 
-        [string]$WSLDistro
+        [string]$WSLDistro,
+
+        [string[]]$Tags,
+
+        [switch]$Check,
+        [switch]$Diff,
+
+        [string[]]$ExtraArgs
     )
 
     [string[]] $wslExtraArgs = @()
     if ($WSLDistro) {
         $wslExtraArgs += "-d", "$WSLDistro"
+    }
+
+    [string[]] $ansibleExtraArgs = $ExtraArgs
+    if ($Tags -and ($Tags.Count -gt 0)) {
+        $ansibleExtraArgs += "--tags", "$($Tags -join ',')"
+    }
+    if ($Check) {
+        $ansibleExtraArgs += "--check"
+    }
+    if ($Diff) {
+        $ansibleExtraArgs += "--diff"
     }
 
     if ($Protocol -eq 'WinRM') {
@@ -211,7 +229,7 @@ function Invoke-AnsiblePlaybook {
         $inventoryFile = 'windows/inventory-ssh.yml'
     }
 
-    wsl $wslExtraArgs -- ansible-pull windows/playbook.yml -i $inventoryFile --url https://github.com/tkburns/ansible.git
+    wsl $wslExtraArgs -- ansible-pull windows/playbook.yml -i $inventoryFile --limit windows --url https://github.com/tkburns/ansible.git $ansibleExtraArgs
 }
 
 
