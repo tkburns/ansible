@@ -1,5 +1,5 @@
 - name: Check if WSL is installed
-  win_powershell: |
+  ansible.windows.win_powershell: |
     $env:WSL_UTF8=1
     $distro = wsl --list | Select-String '{{ wsl_distro }}'
     $Ansible.Result = $distro.Count -ne 0
