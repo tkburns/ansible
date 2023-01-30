@@ -1,4 +1,4 @@
-- name: Check if WSL {{ wsl_distro }} is installed
+- name: Check if WSL is installed
   win_powershell: |
     $env:WSL_UTF8=1
     $distro = wsl --list | Select-String '{{ wsl_distro }}'
