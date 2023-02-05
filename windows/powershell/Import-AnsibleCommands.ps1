@@ -197,6 +197,8 @@ function Invoke-AnsiblePlaybook {
         [ValidateSet('WinRM', 'SSH')]
         [string]$Protocol = 'WinRM',
 
+        [PSCredential]$Credential,
+
         [string]$WSLDistro,
 
         [string[]]$Tags,
@@ -207,11 +209,32 @@ function Invoke-AnsiblePlaybook {
         [string[]]$ExtraArgs
     )
 
+    # get credentials if not provided
+    if (-not $Credential) {
+        $Credential = Get-Credential -Message "Enter your windows username/password" -UserName $env:UserName
+    }
+
+    # setup wsl args (distro)
     [string[]] $wslExtraArgs = @()
     if ($WSLDistro) {
         $wslExtraArgs += "-d", "$WSLDistro"
     }
 
+    # create vars file with username/password
+    $username = $Credential.UserName
+    $password = $Credential.GetNetworkCredential().Password
+    $credentialVars = "{ `"ansible_user`": `"$username`", `"ansible_password`": `"$password`" }"
+    $credentialFile = New-TemporaryFile
+    $credentialVars | Set-Content -Path $credentialFile.FullName
+
+    # select correct inventory
+    if ($Protocol -eq 'WinRM') {
+        $inventoryFile = 'windows/inventory-winrm.yml'
+    } elseif ($Protocol -eq 'SSH') {
+        $inventoryFile = 'windows/inventory-ssh.yml'
+    }
+
+    # setup other ansible args
     [string[]] $ansibleExtraArgs = $ExtraArgs
     if ($Tags -and ($Tags.Count -gt 0)) {
         $ansibleExtraArgs += "--tags", "$($Tags -join ',')"
@@ -223,13 +246,16 @@ function Invoke-AnsiblePlaybook {
         $ansibleExtraArgs += "--diff"
     }
 
-    if ($Protocol -eq 'WinRM') {
-        $inventoryFile = 'windows/inventory-winrm.yml'
-    } elseif ($Protocol -eq 'SSH') {
-        $inventoryFile = 'windows/inventory-ssh.yml'
-    }
+    # convert credential file path to wsl version
+    Repair-WslEncoding
+    $wslCredentialVarPath = wsl $wslExtraArgs -- wslpath -u "'$($credentialFile.FullName)'"
 
-    wsl $wslExtraArgs -- ansible-pull windows/playbook.yml -i $inventoryFile --limit windows --url https://github.com/tkburns/ansible.git $ansibleExtraArgs
+    # run the playbook
+    wsl $wslExtraArgs -- ansible-pull windows/playbook.yml `
+      -i $inventoryFile `
+      --limit windows `
+      -e "@$wslCredentialVarPath" `
+      --url https://github.com/tkburns/ansible.git $ansibleExtraArgs
 }
 
 

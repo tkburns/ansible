@@ -3,12 +3,6 @@
     ansible_connection: winrm
     ansible_winrm_transport: ntlm
     wsl_distro: Ubuntu
-  vars_prompt:
-    - name: ansible_user
-      prompt: "user"
-      private: no
-    - name: ansible_password
-      prompt: "password"
   tasks:
     - name: System tasks
       import_tasks: tasks/system.yml
