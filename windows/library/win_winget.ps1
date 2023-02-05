@@ -48,7 +48,7 @@ function Run-WingetAction {
         [string] $DefaultSource
     )
 
-    $module.Result.debug += ,@("addressing package:", $package)
+    $module.Result.debug += ,@("addressing package:", [string] $package)
 
     $packageArgs = @{}
     if ($Package.id) {
@@ -93,7 +93,7 @@ function Install-WingetPackage {
     # TODO - support 'latest' version
     $requestedPackage = [WingetPackage] @{ id = $Id; name = $Name; version = $Version; source = $Source }
 
-    $module.Result.debug += ,@("installing:", $requestedPackage)
+    $module.Result.debug += ,@("installing:", [string] $requestedPackage)
 
     [string[]] $wingetArgs = @()
 
@@ -115,7 +115,7 @@ function Install-WingetPackage {
 
     $preinstallPackage = Get-WingetPackage -Id $Id -Name $Name -Source $Source | Select-Object -First 1
     $module.Diff.before += $preinstallPackage
-    $module.Result.debug += ,@("preinstallPackage:", $preinstallPackage)
+    $module.Result.debug += ,@("preinstallPackage:", [string] $preinstallPackage)
 
     $existingPackageMatch = Compare-WingetPackage $requestedPackage $preinstallPackage
     $module.Result.debug += ,@("comparison:", $existingPackageMatch)
@@ -138,7 +138,7 @@ function Install-WingetPackage {
     winget install $wingetArgs > $null
     
     $postinstallPackage = Get-WingetPackage -Id $Id -Name $Name -Source $Source | Select-Object -First 1
-    $module.Result.debug += ,@("postinstallPackage:", $postinstallPackage)
+    $module.Result.debug += ,@("postinstallPackage:", [string] $postinstallPackage)
 
     if (-not $postinstallPackage) {
         $packageName = Get-WingetPackageDisplayName -Id $Id -Name $Name -Source $Source -Version $Version
@@ -163,7 +163,7 @@ function Uninstall-WingetPackage {
         [string] $Source
     )
 
-    $module.Result.debug += ,@("uninstalling:", @{ id = $Id; name = $Name; source = $Source })
+    $module.Result.debug += ,@("uninstalling:", [string] [WingetPackage] @{ id = $Id; name = $Name; source = $Source })
 
     [string[]] $wingetArgs = @()
 
@@ -181,7 +181,7 @@ function Uninstall-WingetPackage {
 
     $preuninstallPackage = Get-WingetPackage -Id $Id -Name $Name -Source $Source | Select-Object -First 1
     $module.Diff.before += $preuninstallPackage
-    $module.Result.debug += ,@("preuninstallPackage:", $preuninstallPackage)
+    $module.Result.debug += ,@("preuninstallPackage:", [string] $preuninstallPackage)
     
     if (-not $preuninstallPackage) {
         $module.Result.changed = $false
@@ -207,7 +207,7 @@ function Uninstall-WingetPackage {
     $module.Result.uninstalled += $preuninstallPackage
     $module.Diff.after += $postuninstallPackage
 
-    $module.Result.debug += ,@("postuninstallPackage:", $postuninstallPackage)
+    $module.Result.debug += ,@("postuninstallPackage:", [string] $postuninstallPackage)
     $module.Result.debug += ,@("comparison:", (Compare-WingetPackage $preuinstallPackage $postuninstallPackage))
 }
 
