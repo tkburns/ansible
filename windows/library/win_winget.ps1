@@ -93,7 +93,7 @@ function Install-WingetPackage {
     # TODO - support 'latest' version
     $requestedPackage = [WingetPackage] @{ id = $Id; name = $Name; version = $Version; source = $Source }
 
-    $module.Result.debug += ,@("installing:", $requestedPackage.ToString())
+    $module.Result.debug += ,@("installing:", $requestedPackage)
 
     [string[]] $wingetArgs = @()
 
@@ -115,7 +115,7 @@ function Install-WingetPackage {
 
     $preinstallPackage = Get-WingetPackage -Id $Id -Name $Name -Source $Source | Select-Object -First 1
     $module.Diff.before += $preinstallPackage
-    $module.Result.debug += ,@("preinstallPackage:", $preinstallPackage.ToString())
+    $module.Result.debug += ,@("preinstallPackage:", $preinstallPackage)
 
     $existingPackageMatch = Compare-WingetPackages $requestedPackage $preinstallPackage
     $module.Result.debug += ,@("comparison:", $existingPackageMatch)
