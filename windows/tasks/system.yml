@@ -12,7 +12,7 @@
         - Log in
         - Sync the settings
       ===============
-  tags: [manual-steps]
+  tags: [manual-step]
 
 - name: Install Terminal
   win_winget:
