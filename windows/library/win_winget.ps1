@@ -50,37 +50,31 @@ function Run-WingetAction {
 
     $module.Result.debug += ,@("addressing package:", $package)
 
-    $id_name = @{}
+    $packageArgs = @{}
     if ($Package.id) {
-        $id_name.Id = $Package.id
+        $packageArgs.Id = $Package.id
     } elseif ($Package.name) {
-        $id_name.Name = $Package.name
+        $packageArgs.Name = $Package.name
     } else {
         $Module.FailJson("cannot provide both 'id' and 'name' for a package (id: $Id, name: $Name)")
     }
 
-    if ($package.state -eq "absent") {
-        if ($Package.source) {
-            $source = $Package.Source
-        } else {
-            $source = $DefaultSource
-        }
+    if ($Package.source) {
+        $source = $Package.source
+    } else {
+        $source = $DefaultSource
+    }
 
-        Uninstall-WingetPackage -Module $Module @id_name -Source $source
+    if ($package.state -eq "absent") {
+        Uninstall-WingetPackage -Module $Module @packageArgs
     } else {
         if ($Package.version) {
-            $version = $Package.Version
-        } else {
-            $version = $DefaultVersion
-        }
- 
-        if ($Package.source) {
-            $source = $Package.Source
-        } else {
-            $source = $DefaultSource
+            $packageArgs.Version = $Package.version
+        } elseif ($DefaultVersion) {
+            $packageArgs.Version = $DefaultVersion
         }
 
-        Install-WingetPackage -Module $Module @id_name -Version $version -Source $source
+        Install-WingetPackage -Module $Module @packageArgs
     }
 }
 
@@ -96,7 +90,10 @@ function Install-WingetPackage {
         [string] $Source
     )
 
-    $module.Result.debug += ,@("installing:", @{ id = $Id; name = $Name; version = $Version; source = $Source })
+    # TODO - support 'latest' version
+    $requestedPackage = [WingetPackage] @{ id = $Id; name = $Name; version = $Version; source = $Source }
+
+    $module.Result.debug += ,@("installing:", $requestedPackage.ToString())
 
     [string[]] $wingetArgs = @()
 
@@ -118,40 +115,39 @@ function Install-WingetPackage {
 
     $preinstallPackage = Get-WingetPackage -Id $Id -Name $Name -Source $Source | Select-Object -First 1
     $module.Diff.before += $preinstallPackage
-    $module.Result.debug += ,@("preinstallPackage:", $preinstallPackage)
+    $module.Result.debug += ,@("preinstallPackage:", $preinstallPackage.ToString())
 
-    if ($module.CheckMode) {
-        $package = Find-WingetPackage -Id $Id -Name $Name -Source $Source -Version $Version | Select-Object -First 1
-        $module.Result.debug += ,@("search package:", $package)
+    $existingPackageMatch = Compare-WingetPackages $requestedPackage $preinstallPackage
+    $module.Result.debug += ,@("comparison:", $existingPackageMatch)
 
-        if (-not $package) {
-            $packageName = Get-WingetPackageDisplayName -Id $Id -Name $Name -Source $Source -Version $Version
-            $module.FailJson("could not find package $packageName")
-        }
+    if ($existingPackageMatch.IsEqual) {
+        $module.Result.changed = $false
+        $module.Result.installed += $preinstallPackage
+        $module.Diff.after += $preinstallPackage
 
-        $module.Result.changed = -not (Compare-WingetPackage $package $preinstallPackage).IsEqual
-        $module.Result.installed += $package
-        $module.Diff.after += $package
-
-        $module.Result.debug += ,@("comparison:", (Compare-WingetPackage $package $preinstallPackage))
+        return
+    } elseif ($module.CheckMode) {
+        $module.Result.changed = $true
+        $module.Result.installed += $requestedPackage
+        $module.Diff.after += $requestedPackage
 
         return
     }
 
-    winget install $wingetArgs > $null
     $module.Result.debug += ,@("winget command:", "winget install", $wingetArgs)
+    winget install $wingetArgs > $null
     
     $postinstallPackage = Get-WingetPackage -Id $Id -Name $Name -Source $Source | Select-Object -First 1
-    $module.Diff.after += $postinstallPackage
     $module.Result.debug += ,@("postinstallPackage:", $postinstallPackage)
 
     if (-not $postinstallPackage) {
         $packageName = Get-WingetPackageDisplayName -Id $Id -Name $Name -Source $Source -Version $Version
-        $module.FailJson("could not find package $packageName")
+        $module.FailJson("could not find package $packageName after installation")
     }
 
     $module.Result.changed = -not (Compare-WingetPackage $postinstallPackage $preinstallPackage).IsEqual
     $module.Result.installed += $postinstallPackage
+    $module.Diff.after += $postinstallPackage
 
     $module.Result.debug += ,@("comparison:", (Compare-WingetPackage $postinstallPackage $preinstallPackage))
 }
@@ -194,21 +190,21 @@ function Uninstall-WingetPackage {
         return
     }
 
-    $module.Result.uninstalled += $preuninstallPackage
-
     if ($module.CheckMode) {
         $module.Result.changed = $true
+        $module.Result.uninstalled += $preuninstallPackage
         $module.Diff.after += $null
 
         return
     }
 
-    winget uninstall $wingetArgs > $null
     $module.Result.debug += ,@("winget command:", "winget uninstall", $wingetArgs)
+    winget uninstall $wingetArgs > $null
 
     $postuninstallPackage = Get-WingetPackage -Id $Id -Name $Name -Source $Source | Select-Object -First 1
 
     $module.Result.changed = -not (Compare-WingetPackage $preuinstallPackage $postuninstallPackage).IsEqual
+    $module.Result.uninstalled += $preuninstallPackage
     $module.Diff.after += $postuninstallPackage
 
     $module.Result.debug += ,@("postuninstallPackage:", $postuninstallPackage)
@@ -262,7 +258,7 @@ function Find-WingetPackage {
         $wingetArgs += "--source", $Source
     }
     
-    [WingetPackage[]] (winget list $wingetArgs | Format-WingetPackageOutput)
+    [WingetPackage[]] (winget search $wingetArgs | Format-WingetPackageOutput)
 }
 
 function Compare-WingetPackage {
@@ -276,22 +272,24 @@ function Compare-WingetPackage {
     )
 
     $ret = [PSCustomObject] @{
-        Matches = $true
-        IsEqual = $true
+        Matches = $false
+        IsEqual = $false
         IsNull = $false
     }
 
     if (($A -eq $null) -and ($B -eq $null)) {
+        $ret.Matches = $true
+        $ret.IsEqual = $true
         $ret.IsNull = $true
-    } elseif (($A -eq $null) -or ($B -eq $null)) {
-        $ret.Matches = $false
-        $ret.IsEqual = $false
-    } else {
-        if (($A.Id -ne $B.Id) -or ($A.Source -ne $B.Source)) {
-            $ret.IsEqual = $false
-            $ret.Matches = $false
-        } elseif ($A.Version -ne $B.Version) {
-            $ret.IsEqual = $false
+    } elseif (($A -ne $null) -and ($B -ne $null)) {
+        $idEq = ($A.Id -eq $B.Id) -or (-not $A.Id) -or (-not $B.Id)
+        $nameEq = ($A.Name -eq $B.Name) -or (-not $A.Name) -or (-not $B.Name)
+        $sourceEq = ($A.Source -eq $B.Source) -or (-not $A.Source) -or (-not $B.Source)
+        $versionEq = ($A.Version -eq $B.Version) -or (-not $A.Version) -or (-not $B.Version)
+
+        if ($idEq -and $nameEq -and $sourceEq) {
+            $ret.IsEqual = $true
+            $ret.Matches = $versionEq
         }
     }
 
@@ -326,10 +324,10 @@ function Get-WingetPackageDisplayName {
 
     $packageName = ""
     
-    if ($Source) { $packageName += " [$Source]" }
     if ($Id) { $packageName += " $Id" }
     if ($Name) { $packageName += " $Name" }
     if ($Version) { $packageName += " $Version" }
+    if ($Source) { $packageName += " [$Source]" }
     
     $packageName.Trim()
 }
@@ -412,6 +410,7 @@ $module.Diff.after = @()
 
 $module.Result.debug = @()
 
+# TODO - cast packages/params to class (WingetPackageAction?)
 if ($module.Params.packages) {
     $defaults = @{
         $DefaultVersion = $module.Params.version
