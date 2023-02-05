@@ -117,7 +117,7 @@ function Install-WingetPackage {
     $module.Diff.before += $preinstallPackage
     $module.Result.debug += ,@("preinstallPackage:", $preinstallPackage)
 
-    $existingPackageMatch = Compare-WingetPackages $requestedPackage $preinstallPackage
+    $existingPackageMatch = Compare-WingetPackage $requestedPackage $preinstallPackage
     $module.Result.debug += ,@("comparison:", $existingPackageMatch)
 
     if ($existingPackageMatch.IsEqual) {
