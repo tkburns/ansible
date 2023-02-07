@@ -8,7 +8,7 @@
   tags: [musescore]
   block:
     - name: Get latest MuseScore installer
-      uri:
+      win_uri:
         url: https://api.github.com/repos/musescore/musescore/releases/latest
         return_content: true
       register: musescore_latest
