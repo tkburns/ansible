@@ -1,5 +1,5 @@
 - name: Install PowerShell 7
   win_winget:
     id: microsoft.powershell
-  tasks: [terminal, powershell]
+  tags: [terminal, powershell]
 
