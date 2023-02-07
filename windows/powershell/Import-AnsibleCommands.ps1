@@ -201,10 +201,11 @@ function Invoke-AnsiblePlaybook {
 
         [string]$WSLDistro,
 
-        [string[]]$Tags,
-
         [switch]$Check,
         [switch]$Diff,
+
+        [string[]]$Tags,
+        [string[]]$WSLPlaybookTags,
 
         [string[]]$ExtraArgs
     )
@@ -245,6 +246,9 @@ function Invoke-AnsiblePlaybook {
     if ($Diff) {
         $ansibleExtraArgs += "--diff"
     }
+    if ($WSLPlaybookTags) {
+        $ansibleExtraArgs += "-e", "'wsl_playbook_tags=`"$($WSLPlaybookTags -join ',')`"'"
+    }
 
     # convert credential file path to wsl version
     Repair-WslEncoding
@@ -255,7 +259,8 @@ function Invoke-AnsiblePlaybook {
       -i $inventoryFile `
       --limit windows `
       -e "@$wslCredentialVarPath" `
-      --url https://github.com/tkburns/ansible.git $ansibleExtraArgs
+      --url https://github.com/tkburns/ansible.git `
+      $ansibleExtraArgs
 }
 
 
