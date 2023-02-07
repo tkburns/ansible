@@ -233,7 +233,9 @@ function Get-WingetPackage {
         $wingetArgs += "--source", $Source
     }
 
-    [WingetPackage[]] (winget list $wingetArgs | Format-WingetPackageOutput)
+    $packages = winget list $wingetArgs | Format-WingetPackageOutput `
+        | Select-Object Id, Name, Source, Version
+    [WingetPackage[]] $packages
 }
 
 function Find-WingetPackage {
@@ -258,7 +260,9 @@ function Find-WingetPackage {
         $wingetArgs += "--source", $Source
     }
     
-    [WingetPackage[]] (winget search $wingetArgs | Format-WingetPackageOutput)
+    $packages = winget search $wingetArgs | Format-WingetPackageOutput `
+        | Select-Object Id, Name, Source, Version
+    [WingetPackage[]] $packages
 }
 
 function Compare-WingetPackage {
