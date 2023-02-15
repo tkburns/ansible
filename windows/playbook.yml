@@ -3,6 +3,8 @@
     ansible_connection: winrm
     ansible_winrm_transport: ntlm
     wsl_distro: Ubuntu
+    # wsl_playbook_tags
+    # wsl_playbook_args
   tasks:
     - name: System tasks
       import_tasks: tasks/system.yml

@@ -207,7 +207,9 @@ function Invoke-AnsiblePlaybook {
         [string[]]$Tags,
         [string[]]$WSLPlaybookTags,
 
-        [string[]]$ExtraArgs
+        [string[]]$ExtraArgs,
+
+        [string]$WSLPlaybookArgs = ''
     )
 
     # get credentials if not provided
@@ -242,12 +244,19 @@ function Invoke-AnsiblePlaybook {
     }
     if ($Check) {
         $ansibleExtraArgs += "--check"
+        $WSLPlaybookArgs += "--check"
     }
     if ($Diff) {
         $ansibleExtraArgs += "--diff"
+        $WSLPlaybookArgs += "--diff"
     }
     if ($WSLPlaybookTags) {
         $ansibleExtraArgs += "-e", "'wsl_playbook_tags=`"$($WSLPlaybookTags -join ',')`"'"
+    }
+
+    if ($WSLPlaybookArgs) {
+        $escapedArgs = $WSLPlaybookArgs -replace '\\','\\' -replace "(['`"])",'\$1'
+        $ansibleExtraArgs += "-e", "'wsl_playbook_args=`"$escapedArgs`"'"
     }
 
     # convert credential file path to wsl version
