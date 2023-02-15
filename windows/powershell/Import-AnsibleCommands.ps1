@@ -207,6 +207,8 @@ function Invoke-AnsiblePlaybook {
         [string[]]$Tags,
         [string[]]$WSLPlaybookTags,
 
+        [byte]$VerboseLevel,
+
         [string[]]$ExtraArgs,
 
         [string]$WSLPlaybookArgs = ''
@@ -249,6 +251,11 @@ function Invoke-AnsiblePlaybook {
     if ($Diff) {
         $ansibleExtraArgs += "--diff"
         $WSLPlaybookArgs += "--diff"
+    }
+    if ($VerboseLevel) {
+        $verboseFlag = "-" + ('v' * $VerboseLevel)
+        $ansibleExtraArgs += $verboseFlag
+        $WSLPlaybookArgs += $verboseFlag
     }
     if ($WSLPlaybookTags) {
         $ansibleExtraArgs += "-e", "'wsl_playbook_tags=`"$($WSLPlaybookTags -join ',')`"'"
