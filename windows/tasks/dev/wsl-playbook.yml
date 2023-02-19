@@ -7,10 +7,20 @@
 
 - name: Run WSL Playbook
   win_command: >-
+    params=$(cat <<EOI
+    {
+      {% if ssh_key_name %} "ssh_key_name": "{{ ssh_key_name | replace('\"', '\\\"') | safe }}", {% endif %}
+      {% if ssh_key_passphrase %} "ssh_key_passphrase": "{{ ssh_key_passphrase | replace('\"', '\\\"') | safe }}", {% endif %}
+      "dummy": "to swallow trailing comma"
+    }
+    EOI
+    )
+
     wsl -d {{ wsl_distro }} -- ansible-pull linux/wsl-playbook.yml
       --url https://github.com/tkburns/ansible.git
       --tags "{{ ansible_run_tags | join(',') }}"
       {% if wsl_playbook_tags %} --tags "{{ wsl_playbook_tags }}" {% endif %}
+      -e "$params"
       {% if wsl_playbook_args %} {{ wsl_playbook_args }} {% endif %}
 
 

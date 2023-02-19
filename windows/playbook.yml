@@ -3,8 +3,15 @@
     ansible_connection: winrm
     ansible_winrm_transport: ntlm
     wsl_distro: Ubuntu
+
+    ### vars in the wsl playbook ###
+    # ssh_key_name
+    # ssh_key_passphrase
+
+    ### vars for running the wsl playbook ###
     # wsl_playbook_tags
     # wsl_playbook_args
+
   tasks:
     - name: System tasks
       import_tasks: tasks/system.yml
