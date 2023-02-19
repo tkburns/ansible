@@ -209,9 +209,12 @@ function Invoke-AnsiblePlaybook {
 
         [byte]$VerboseLevel,
 
-        [string[]]$ExtraArgs,
+        [string]$SshKeyName,
+        [string]$SshKeyPassphrase,
 
-        [string]$WSLPlaybookArgs = ''
+        [string[]]$WSLPlaybookArgs = '',
+
+        [string[]]$ExtraArgs
     )
 
     # get credentials if not provided
@@ -239,8 +242,8 @@ function Invoke-AnsiblePlaybook {
         $inventoryFile = 'windows/inventory-ssh.yml'
     }
 
-    # setup other ansible args
-    [string[]] $ansibleExtraArgs = $ExtraArgs
+    # setup ansible run args
+    [string[]] $ansibleExtraArgs = @()
     if ($Tags -and ($Tags.Count -gt 0)) {
         $ansibleExtraArgs += "--tags", "$($Tags -join ',')"
     }
@@ -257,13 +260,31 @@ function Invoke-AnsiblePlaybook {
         $ansibleExtraArgs += $verboseFlag
         $WSLPlaybookArgs += $verboseFlag
     }
+    $ansibleExtraArgs += $ExtraArgs
+
+    # setup ansible vars
+    $vars = @()
+    if ($SshKeyName) {
+        $vars += @{ name = "ssh_key_name"; value = $SshKeyName }
+    }
+    if ($SshKeyPassphrase) {
+        $vars += @{ name = "ssh_key_passphrase"; value = $SshKeyPassphrase }
+    }
     if ($WSLPlaybookTags) {
-        $ansibleExtraArgs += "-e", "'wsl_playbook_tags=`"$($WSLPlaybookTags -join ',')`"'"
+        $vars += @{ name = "wsl_playbook_tags"; value = $WSLPlaybookTags -join ',' }
+    }
+    if ($WSLPlaybookArgs) {
+        $vars += @{ name = "wsl_playbook_args"; value = $WSLPlaybookArgs }
     }
 
-    if ($WSLPlaybookArgs) {
-        $escapedArgs = $WSLPlaybookArgs -replace '\\','\\' -replace "(['`"])",'\$1'
-        $ansibleExtraArgs += "-e", "'wsl_playbook_args=`"$escapedArgs`"'"
+    $varsFlag = ""
+    if ($vars.Count -gt 0) {
+        $varPairs = $vars | Foreach-Object {
+            $name = $_.name
+            $escaped = $_.value -replace '\\','\\' -replace "(['`"])",'\$1'
+            "$name=\`"$escaped\`""
+        }
+        $varsFlag = "-e", "'$($varPairs -join ' ')'"
     }
 
     # convert credential file path to wsl version
@@ -276,6 +297,7 @@ function Invoke-AnsiblePlaybook {
       --limit windows `
       -e "@$wslCredentialVarPath" `
       --url https://github.com/tkburns/ansible.git `
+      $varsFlag `
       $ansibleExtraArgs
 }
 
