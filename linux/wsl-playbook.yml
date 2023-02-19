@@ -2,6 +2,10 @@
   vars:
     is_wsl: true
     project_dir: ~/projects
+
+    ssh_key_name: id_ed25519
+    # ssh_key_passphrase
+
   tasks:
     - name: Setup Terminal
       import_tasks: tasks/terminal.yml
@@ -9,9 +13,9 @@
     - name: Setup Langs
       import_tasks: tasks/langs.yml
       tags: [lang]
-#     - name: Setup Keys
-#       import_tasks: tasks/keys.yml
-#       tags: [key]
+    - name: Setup Keys
+      import_tasks: tasks/keys.yml
+      tags: [key]
     - name: Setup Projects
       import_tasks: tasks/projects.yml
       tags: [project]

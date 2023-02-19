@@ -1,0 +1,25 @@
+- name: Setup SSH key
+  tags: [ssh]
+  community.crypto.openssh_keypair:
+    path: ~/.ssh/{{ ssh_key_name }}
+    passphrase: '{{ ssh_key_passphrase }}'
+    type: ed25519
+  register: ssh_key
+
+# - name: Setup GPG key
+#   tags: [gpg]
+#   block:
+#     - name: Check for existing key
+#     - name: Create GPG key
+
+- name: Setup keys in GitHub
+  tags: [manual-step, github]
+  pause:
+    prompt: |
+      ==========
+      Setup the new keys in GitHub
+
+      SSH Key (public key):
+      {{ ssh_key.public_key }}
+      ==========
+
