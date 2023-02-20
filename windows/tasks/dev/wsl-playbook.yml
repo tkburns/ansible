@@ -6,7 +6,7 @@
       sudo apt-get install -y curl git software-properties-common ansible
 
 - name: Run WSL Playbook
-  win_command: >-
+  win_shell: >-
     params=$(cat <<EOI
     {
       {% if ssh_key_filename %} "ssh_key_filename": "{{ ssh_key_filename | replace('\"', '\\\"') | safe }}", {% endif %}
@@ -25,5 +25,12 @@
       {% if wsl_playbook_tags %} --tags "{{ wsl_playbook_tags }}" {% endif %}
       -e "$params"
       {% if wsl_playbook_args %} {{ wsl_playbook_args }} {% endif %}
+  check_mode: no
+  register: wsl_playbook
+
+- name: Display WSL playbook output
+  pause:
+    seconds: 1
+    prompt: '{{ wsl_playbook.stdout }}'
 
 
