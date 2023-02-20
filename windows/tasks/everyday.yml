@@ -21,6 +21,7 @@
         path: "{{ item.browser_download_url }}"
         product_id: '{0A7FE0EB-6049-4FE5-8C61-122149891EAE}'
         creates_path: 'C:\Program Files\MuseScore 4'
+      register: musescore
       tags: [application]
 
     - name: Mention MuseHub
@@ -31,6 +32,7 @@
             [MuseHub] Muse Hub can be installed manually here:
             https://www.musehub.com
           ===============
+      when: musescore is success
       tags: [manual-step]
 
 

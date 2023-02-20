@@ -1,6 +1,7 @@
 - name: Install PowerToys
   win_winget:
     id: microsoft.powertoys
+  register: powertoys
   tags: [application]
 
 - name: Manual Steps (PowerToys)
@@ -13,6 +14,7 @@
         - Sync the settings
       ===============
   tags: [manual-step]
+  when: powertoys is success
 
 - name: Install Terminal
   win_winget:

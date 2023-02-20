@@ -9,6 +9,7 @@
 - name: Install VSCode
   win_winget:
     id: microsoft.visualstudiocode
+  register: vscode
   tags: [application, vscode]
 
 - name: Install VSCode Remote Dev Extensions
@@ -31,5 +32,6 @@
         [VSCode] Manual Steps:
         - Log in to sync the settings
       ===============
+  when: vscode is success
   tags: [manual-steps]
 
