@@ -1,16 +1,65 @@
 - name: Setup SSH key
   tags: [ssh]
   community.crypto.openssh_keypair:
-    path: ~/.ssh/{{ ssh_key_name }}
+    path: ~/.ssh/{{ ssh_key_filename }}
     passphrase: '{{ ssh_key_passphrase }}'
     type: ed25519
   register: ssh_key
 
-# - name: Setup GPG key
-#   tags: [gpg]
-#   block:
-#     - name: Check for existing key
-#     - name: Create GPG key
+ - name: Setup GPG key
+   tags: [gpg]
+   when: gpg_key_email is defined
+   register: gpg_key
+   block:
+     - name: Check for existing key
+       shell: gpg --list-secret-keys {{ gpg_key_email }}
+       register: gpg_existing
+
+     - name: Create GPG key
+       shell: |
+         argsfile="$(mktemp)"
+         cat > "$argsfile" <<EOI
+           Key-Type: RSA
+           Key-Length: 4096
+           Subkey-Type: default
+           Subkey-Usage: sign
+           {% if gpg_key_name %}
+           Name-Real: {{ gpg_key_name }}
+           {% endif %}
+           Name-Email: {{ gpg_key_email }}
+           Name-Comment: key for signing commits
+           Expire-Date: 0
+           Passphrase: {{ gpg_key_passphrase }}
+         EOI
+         gpg --batch --generate-key "$argsfile"
+
+     - name: Get GPG key id
+       shell: gpg --list-keys {{ gpg_key_email }} | awk -F'[ /]' '/sub/ { print $5 }'
+       register: gpg_key_id
+     - name: Get GPG public key
+       shell: gpg --armor --export {{ gpg_key_id.stdout }}
+       register: gpg_public_key
+
+     - name: Setup git commit signing
+       git_config:
+         name: '{{ item.name }}'
+         value: '{{ item.value }}'
+       with_items:
+         - name: user.signingkey
+           value: '{{ gpg_key_id.stdout }}'
+         - name: commit.gpgsign
+           value: 'true'
+       tags: [git]
+     - name: Fix GPG tty for WSL
+       blockinfile:
+         path: ~/.bash_profile
+         block: |
+           # fix GPG pin entry on WSL
+           export GPG_TTY=$(tty)
+         marker: '# {mark} ANSIBLE MANAGED BLOCK: gpg-tty'
+         create: true
+       tags: [shell]
+       where: ansible_facts.env.WSL_DISTRO_NAME is defined
 
 - name: Setup keys in GitHub
   tags: [manual-step, github]
@@ -19,7 +68,16 @@
       ==========
       Setup the new keys in GitHub
 
+      {% if ssh_key is success %}
       SSH Key (public key):
       {{ ssh_key.public_key }}
+
+      {% endif %}
+      {% if gpg_key is success %}
+      GPG Key (public key):
+      {{ gpg_public_key.stdout }}
+
+      {% endif %}
       ==========
+  when: (ssh_key is success) or (gpg_key is success)
 

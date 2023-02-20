@@ -3,8 +3,11 @@
     is_wsl: true
     project_dir: ~/projects
 
-    ssh_key_name: id_ed25519
+    ssh_key_filename: id_ed25519
     # ssh_key_passphrase
+    # gpg_key_name
+    # gpg_key_email
+    # gpg_key_passphrase
 
   tasks:
     - name: Setup Terminal

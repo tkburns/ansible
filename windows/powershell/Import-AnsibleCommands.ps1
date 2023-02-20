@@ -209,8 +209,11 @@ function Invoke-AnsiblePlaybook {
 
         [byte]$VerboseLevel,
 
-        [string]$SshKeyName,
-        [string]$SshKeyPassphrase,
+        [string]$SSHKeyFilename,
+        [string]$SSHKeyPassphrase,
+        [string]$GPGKeyName,
+        [string]$GPGKeyEmail,
+        [string]$GPGKeyPassphrase,
 
         [string[]]$WSLPlaybookArgs = '',
 
@@ -264,11 +267,20 @@ function Invoke-AnsiblePlaybook {
 
     # setup ansible vars
     $vars = @()
-    if ($SshKeyName) {
-        $vars += @{ name = "ssh_key_name"; value = $SshKeyName }
+    if ($SSHKeyFilename) {
+        $vars += @{ name = "ssh_key_filename"; value = $SSHKeyFilename }
     }
-    if ($SshKeyPassphrase) {
-        $vars += @{ name = "ssh_key_passphrase"; value = $SshKeyPassphrase }
+    if ($SSHKeyPassphrase) {
+        $vars += @{ name = "ssh_key_passphrase"; value = $SSHKeyPassphrase }
+    }
+    if ($GPGKeyName) {
+        $vars += @{ name = "gpg_key_name"; value = $GPGKeyName }
+    }
+    if ($GPGKeyEmail) {
+        $vars += @{ name = "gpg_key_email"; value = $GPGKeyEmail }
+    }
+    if ($GPGKeyPassphrase) {
+        $vars += @{ name = "gpg_key_passphrase"; value = $GPGKeyPassphrase }
     }
     if ($WSLPlaybookTags) {
         $vars += @{ name = "wsl_playbook_tags"; value = $WSLPlaybookTags -join ',' }

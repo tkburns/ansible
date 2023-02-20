@@ -5,8 +5,11 @@
     wsl_distro: Ubuntu
 
     ### vars in the wsl playbook ###
-    # ssh_key_name
+    # ssh_key_filename
     # ssh_key_passphrase
+    # gpg_key_name
+    # gpg_key_email
+    # gpg_key_passphrase
 
     ### vars for running the wsl playbook ###
     # wsl_playbook_tags

@@ -9,8 +9,11 @@
   win_command: >-
     params=$(cat <<EOI
     {
-      {% if ssh_key_name %} "ssh_key_name": "{{ ssh_key_name | replace('\"', '\\\"') | safe }}", {% endif %}
+      {% if ssh_key_filename %} "ssh_key_filename": "{{ ssh_key_filename | replace('\"', '\\\"') | safe }}", {% endif %}
       {% if ssh_key_passphrase %} "ssh_key_passphrase": "{{ ssh_key_passphrase | replace('\"', '\\\"') | safe }}", {% endif %}
+      {% if gpg_key_name %} "gpg_key_name ": "{{ gpg_key_name | replace('\"', '\\\"') | safe }}", {% endif %}
+      {% if gpg_key_email %} "gpg_key_email": "{{ gpg_key_email | replace('\"', '\\\"') | safe }}", {% endif %}
+      {% if gpg_key_passphrase %} "gpg_key_passphrase": "{{ gpg_key_passphrase | replace('\"', '\\\"') | safe }}", {% endif %}
       "dummy": "to swallow trailing comma"
     }
     EOI
