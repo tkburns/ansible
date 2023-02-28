@@ -8,6 +8,7 @@
           $distro = wsl --list
       }
       $Ansible.Result = $distro.Count -ne 0
+  changed_when: False
   register: wsl_exists
 
 - name: Install WSL

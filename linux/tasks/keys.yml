@@ -13,6 +13,7 @@
    block:
      - name: Check for existing key
        shell: gpg --list-secret-keys {{ gpg_key_email }}
+       changed_when: False
        register: gpg_existing
 
      - name: Create GPG key
@@ -35,9 +36,11 @@
 
      - name: Get GPG key id
        shell: gpg --list-keys {{ gpg_key_email }} | awk -F'[ /]' '/sub/ { print $5 }'
+       changed_when: False
        register: gpg_key_id
      - name: Get GPG public key
        shell: gpg --armor --export {{ gpg_key_id.stdout }}
+       changed_when: False
        register: gpg_public_key
 
      - name: Setup git commit signing

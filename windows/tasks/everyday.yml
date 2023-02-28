@@ -11,6 +11,7 @@
       win_uri:
         url: https://api.github.com/repos/musescore/musescore/releases/latest
         return_content: true
+      changed_when: False
       register: musescore_latest
       tags: [application]
 
