@@ -76,31 +76,12 @@ function Install-Ansible {
     
     }
 
-
     ###########
     #
-    # Install Ansible on WSL (Ubuntu) for controlling windows
+    # Install Ansible on WSL for controlling windows
     #
 
-    [string[]] $wslExtraArgs = @()
-    if ($WSLDistro) {
-        $wslExtraArgs += "-d", "$WSLDistro"
-    }
-
-    # install ansible
-    wsl $wslExtraArgs -- `
-      sudo apt install -y software-properties-common '&&' `
-      sudo apt-add-repository --yes --update ppa:ansible/ansible '&&' `
-      sudo apt install -y python3 python3-pip ansible
-
-    # install ansible command completion
-    wsl $wslExtraArgs -- `
-      pip3 install argcomplete '&&' `
-      activate-global-python-argcomplete --user
-
-    # install winrm
-    wsl $wslExtraArgs -- pip3 install pywinrm
-
+    Install-WSLAnsible -WSLDistro $WSLDistro -InstallWinRM:($Protocol -in 'WinRM', 'All')
 }
 
 
@@ -178,13 +159,13 @@ function Uninstall-Ansible {
             }
         }
     } elseif ($CleanWSL) {
-        [string[]] $wslExtraArgs = @()
+        [string[]] $wslDistroArg = @()
         if ($WSLDistro) {
-            $wslExtraArgs += "-d", "$WSLDistro"
+            $wslDistroArg += "-d", "$WSLDistro"
         }
 
         # remove just ansible-specific things
-        wsl $wslExtraArgs -- `
+        wsl $wslDistroArg -- `
           pip3 uninstall pywinrm '&&' `
           sudo apt uninstall ansible '&&' `
           sudo apt-add-repository -r ppa:ansible/ansible
@@ -205,17 +186,8 @@ function Invoke-AnsiblePlaybook {
         [switch]$Diff,
 
         [string[]]$Tags,
-        [string[]]$WSLPlaybookTags,
 
         [byte]$VerboseLevel,
-
-        [string]$SSHKeyFilename,
-        [string]$SSHKeyPassphrase,
-        [string]$GPGKeyName,
-        [string]$GPGKeyEmail,
-        [string]$GPGKeyPassphrase,
-
-        [string[]]$WSLPlaybookArgs = '',
 
         [string[]]$ExtraArgs
     )
@@ -226,9 +198,9 @@ function Invoke-AnsiblePlaybook {
     }
 
     # setup wsl args (distro)
-    [string[]] $wslExtraArgs = @()
+    [string[]] $wslDistroArg = @()
     if ($WSLDistro) {
-        $wslExtraArgs += "-d", "$WSLDistro"
+        $wslDistroArg += "-d", "$WSLDistro"
     }
 
     # create vars file with username/password
@@ -252,16 +224,160 @@ function Invoke-AnsiblePlaybook {
     }
     if ($Check) {
         $ansibleExtraArgs += "--check"
-        $WSLPlaybookArgs += "--check"
     }
     if ($Diff) {
         $ansibleExtraArgs += "--diff"
-        $WSLPlaybookArgs += "--diff"
     }
     if ($VerboseLevel) {
         $verboseFlag = "-" + ('v' * $VerboseLevel)
         $ansibleExtraArgs += $verboseFlag
-        $WSLPlaybookArgs += $verboseFlag
+    }
+    $ansibleExtraArgs += $ExtraArgs
+
+    # convert credential file path to wsl version
+    Repair-WslEncoding
+    $wslCredentialVarPath = wsl $wslDistroArg -- wslpath -u "'$($credentialFile.FullName)'"
+
+    # run the playbook
+    wsl $wslDistroArg -- ansible-pull windows/playbook.yml `
+      -i $inventoryFile `
+      --limit windows `
+      -e "@$wslCredentialVarPath" `
+      --url https://github.com/tkburns/ansible.git `
+      $ansibleExtraArgs
+}
+
+
+##########
+#
+# WSL
+#
+
+function Install-WSLAnsible {
+    param (
+        [Parameter(Mandatory=$false)]
+        [string]$WSLDistro,
+
+        [Parameter(Mandatory=$false)]
+        [switch]$InstallWinRM
+    )
+
+    Repair-WSLEncoding
+
+    [string[]] $wslDistroArg = @()
+    if ($WSLDistro) {
+        $wslDistroArg += "-d", "$WSLDistro"
+    }
+
+    if ($WSLDistro) {
+        $installed = wsl --list | Select-String $WSLDistro
+    } else {
+        $installed = wsl --list
+    }
+
+    if (-not $installed) {
+        wsl --install $wslDistroArg
+    }
+
+    # install ansible
+    wsl $wslDistroArg -- `
+      sudo apt-add-repository --yes --update ppa:ansible/ansible '&&' `
+      sudo apt-get update -y '&&' `
+      sudo apt-get install -y curl git software-properties-common python3 python3-pip ansible
+
+    # install ansible command completion?
+    wsl $wslDistroArg -- `
+      python3 -m pip install --user argcomplete '&&' `
+      activate-global-python-argcomplete --user
+
+    # install winrm
+    if ($InstallWinRM) {
+        wsl $wslDistroArg -- pip3 install pywinrm
+    }
+}
+
+function Uninstall-WSLAnsible {
+    [CmdletBinding(DefaultParameterSetName = 'Default')]
+    param (
+        [Parameter(ParameterSetName = 'Default')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'RemoveDistro')]
+        [string]$WSLDistro,
+
+        [switch]$RemovePython,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'RemoveDistro')]
+        [switch]$RemoveWSLDistro
+    )
+
+    [string[]] $wslDistroArg = @()
+    if ($WSLDistro) {
+        $wslDistroArg += "-d", "$WSLDistro"
+    }
+
+    if ($RemoveWSLDistro) {
+        if ($WSLDistro) {
+            wsl --unregister $WSLDistro
+            return
+        } else {
+            throw [System.ArgumentException] "RemoveWSLDistro requires WSLDistro be set"
+        }
+    }
+
+    # uninstall winrm
+    wsl $wslDistroArg -- pip3 uninstall -y pywinrm
+
+    if ($RemovePython) {
+        wsl $wslDistroArg -- `
+          sudo apt-get uninstall -y python3-pip python3
+    }
+
+    # remove just ansible-specific things
+    wsl $wslDistroArg -- `
+      sudo apt-add-repository -r ppa:ansible/ansible '&&' `
+      sudo apt-get uninstall -y ansible
+}
+
+function Invoke-WSLAnsiblePlaybook {
+    [CmdletBinding()]
+    Param(
+        [string]$WSLDistro,
+
+        [switch]$Check,
+        [switch]$Diff,
+
+        [string[]]$Tags,
+
+        [byte]$VerboseLevel,
+
+        [string]$SSHKeyFilename,
+        [string]$SSHKeyPassphrase,
+        [string]$GPGKeyName,
+        [string]$GPGKeyEmail,
+        [string]$GPGKeyPassphrase,
+
+        [string[]]$ExtraArgs
+    )
+
+    # setup wsl args (distro)
+    [string[]] $wslDistroArg = @()
+    if ($WSLDistro) {
+        $wslDistroArg += "-d", "$WSLDistro"
+    }
+
+    # setup ansible run args
+    [string[]] $ansibleExtraArgs = @()
+    if ($Tags -and ($Tags.Count -gt 0)) {
+        $ansibleExtraArgs += "--tags", "$($Tags -join ',')"
+    }
+    if ($Check) {
+        $ansibleExtraArgs += "--check"
+    }
+    if ($Diff) {
+        $ansibleExtraArgs += "--diff"
+    }
+    if ($VerboseLevel) {
+        $verboseFlag = "-" + ('v' * $VerboseLevel)
+        $ansibleExtraArgs += $verboseFlag
     }
     $ansibleExtraArgs += $ExtraArgs
 
@@ -282,12 +398,6 @@ function Invoke-AnsiblePlaybook {
     if ($GPGKeyPassphrase) {
         $vars += @{ name = "gpg_key_passphrase"; value = $GPGKeyPassphrase }
     }
-    if ($WSLPlaybookTags) {
-        $vars += @{ name = "wsl_playbook_tags"; value = $WSLPlaybookTags -join ',' }
-    }
-    if ($WSLPlaybookArgs) {
-        $vars += @{ name = "wsl_playbook_args"; value = $WSLPlaybookArgs }
-    }
 
     $varsFlag = ""
     if ($vars.Count -gt 0) {
@@ -299,20 +409,12 @@ function Invoke-AnsiblePlaybook {
         $varsFlag = "-e", "'$($varPairs -join ' ')'"
     }
 
-    # convert credential file path to wsl version
-    Repair-WslEncoding
-    $wslCredentialVarPath = wsl $wslExtraArgs -- wslpath -u "'$($credentialFile.FullName)'"
-
     # run the playbook
-    wsl $wslExtraArgs -- ansible-pull windows/playbook.yml `
-      -i $inventoryFile `
-      --limit windows `
-      -e "@$wslCredentialVarPath" `
+    wsl $wslDistroArg -- ansible-pull linux/wsl-playbook.yml `
       --url https://github.com/tkburns/ansible.git `
       $varsFlag `
       $ansibleExtraArgs
 }
-
 
 ##########
 #
@@ -326,13 +428,13 @@ function Get-AnsibleConnectionInfo {
         [string]$WSLDistro
     )
 
-    [string[]] $wslExtraArgs = @()
+    [string[]] $wslDistroArg = @()
     if ($WSLDistro) {
-        $wslExtraArgs += "-d", "$WSLDistro"
+        $wslDistroArg += "-d", "$WSLDistro"
     }
 
     $windowsIp = (Get-NetIPConfiguration "vEthernet (WSL)").IPv4Address.IPAddress
-    $wslIp = wsl $wslExtraArgs -- hostname -I
+    $wslIp = wsl $wslDistroArg -- hostname -I
 
     [PSCustomObject] @{ windowsIp=$windowsIp; wslIp=$wslIp }
 }

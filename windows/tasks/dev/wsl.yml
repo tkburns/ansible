@@ -1,0 +1,21 @@
+# Cant run the the wsl playbook directly in this playbook -
+# unable to run wsl commands via a remote connection
+# "The file cannot be accessed by the system."
+
+- name: Run WSL playbook message
+  pause:
+    prompt: |
+      ===============
+        [WSL] Run the WSL playbook (in powershell):
+
+        Install-WSLAnsible
+        Invoke-WSLAnsiblePlaybook `
+          [-WSLDistro distro] `
+          {% if ansible_run_tags | length > 0 -%}
+          [-Tags "{{ ansible_run_tags | join(',') }}",...] `
+          {% endif -%}
+          [playbook vars...]
+          
+      ===============
+  tags: [wsl, manual-step]
+
