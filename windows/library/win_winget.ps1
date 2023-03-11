@@ -13,6 +13,8 @@ $packageOptions = @{
     name = @{ type = "str" }
     version = @{ type = "str" }
     source = @{ type = "str" }
+    scope = @{ type = "str"; choices = "user", "machine" }
+    override = @{ type = "str" }
     state = @{ type = "str"; default = "present"; choices = "absent", "present" }
 }
 
@@ -45,7 +47,9 @@ function Run-WingetAction {
 
         [hashtable] $Package,
         [string] $DefaultVersion,
-        [string] $DefaultSource
+        [string] $DefaultSource,
+        [ValidateSet("user", "machine")]
+        [string] $DefaultScope
     )
 
     $module.Result.debug += ,@("addressing package:", [string] $package)
@@ -59,10 +63,20 @@ function Run-WingetAction {
         $Module.FailJson("cannot provide both 'id' and 'name' for a package (id: $Id, name: $Name)")
     }
 
+    if ($Package.scope) {
+        $packageArgs.source = $Package.scope
+    } elseif ($DefaultScope) {
+        $packageArgs.source = $DefaultScope
+    }
+
     if ($Package.source) {
-        $source = $Package.source
-    } else {
-        $source = $DefaultSource
+        $packageArgs.source = $Package.source
+    } elseif($DefaultSource) {
+        $packageArgs.source = $DefaultSource
+    }
+
+    if ($Package.override) {
+        $packageArgs.override = $Package.override
     }
 
     if ($package.state -eq "absent") {
@@ -87,7 +101,10 @@ function Install-WingetPackage {
         [string] $Id,
         [string] $Name,
         [string] $Version,
-        [string] $Source
+        [string] $Source,
+        [ValidateSet("user", "machine")]
+        [string] $Scope,
+        [string] $Override
     )
 
     # TODO - support 'latest' version
@@ -111,6 +128,14 @@ function Install-WingetPackage {
 
     if ($Source) {
         $wingetArgs += "--source", $Source
+    }
+
+    if ($Scope) {
+        $wingetArgs += "--scope", $Scope
+    }
+
+    if ($Override) {
+        $wingetArgs += "--override", $override
     }
 
     $preinstallPackage = Get-WingetPackage -Id $Id -Name $Name -Source $Source | Select-Object -First 1
@@ -160,7 +185,9 @@ function Uninstall-WingetPackage {
 
         [string] $Id,
         [string] $Name,
-        [string] $Source
+        [string] $Source,
+        [ValidateSet("user", "machine")]
+        [string] $Scope
     )
 
     $module.Result.debug += ,@("uninstalling:", [string] [WingetPackage] @{ id = $Id; name = $Name; source = $Source })
@@ -177,6 +204,10 @@ function Uninstall-WingetPackage {
 
     if ($Source) {
         $wingetArgs += "--source", $Source
+    }
+
+    if ($Scope) {
+        $wingetArgs += "--scope", $Scope
     }
 
     $preuninstallPackage = Get-WingetPackage -Id $Id -Name $Name -Source $Source | Select-Object -First 1
@@ -418,11 +449,12 @@ $module.Result.debug = @()
 if ($module.Params.packages) {
     $defaults = @{
         $DefaultVersion = $module.Params.version
+        $DefaultScope = $module.Params.scope
         $DefaultSource = $module.Params.source
     }
 
     foreach ($package in $module.Params.packages) {
-        Run-WingetAction -Module $module -Package $package -DefaultVersion @defaults
+        Run-WingetAction -Module $module -Package $package @defaults
     }
 } else {
     Run-WingetAction -Module $module -Package $module.Params

@@ -31,6 +31,17 @@ options:
     - The source for the package (winget, msstore, etc).
     - If I(packages) is provided, this is the default source for all the packages.
     type: str
+  scope:
+    description:
+    - The scope for the package (user or machine).
+    - If I(packages) is provided, this is the default scope for all the packages.
+    type: str
+    choices: [ user, machine ]
+  override:
+    description:
+    - Arguments to be passed directly to the installer
+    - This option does not do anything if I(state="absent"), or if I(packages) is provided.
+    type: str
   state:
     description:
     - Set to C(present) to ensure packages are installed.
@@ -67,6 +78,17 @@ options:
         - The source for the package (winget, msstore, etc).
         - This overrides I(source) set at the top-level.
         type: str
+      scope:
+        description:
+        - The scope for the package (user or machine).
+        - This overrides I(scope) set at the top-level.
+        type: str
+        choices: [ user, machine ]
+      override:
+        description:
+        - Arguments to be passed directly to the installer
+        - This option does not do anything if I(state="absent").
+        type: str
       state:
         description:
         - Set to C(present) to ensure package is installed.
@@ -96,6 +118,11 @@ EXAMPLES = r'''
   win_winget:
     id: Microsoft.PowerToys
     state: absent
+
+- name: install VSCode
+  win_winget:
+    id: Microsoft.VisualStudioCode
+    override: /mergetasks="!runcode,addtopath"
 '''
 
 RETURN = r'''
