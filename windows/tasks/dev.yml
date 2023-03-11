@@ -5,11 +5,14 @@
 - name: Install VSCode
   win_winget:
     id: microsoft.visualstudiocode
+    override: /silent /mergetasks="!runcode,addtopath,associatewithfiles"
   register: vscode
   tags: [application, vscode]
 
 - name: Install VSCode Remote Dev Extensions
-  win_command: code --install-extension ms-vscode-remote.vscode-remote-extensionpack
+  win_shell: |
+    & "$env:USERPROFILE\AppData\Local\Programs\Microsoft VS Code\bin\code" `
+      --install-extension ms-vscode-remote.vscode-remote-extensionpack
   tags: [vscode, wsl]
 
 - name: Setup Powershell
