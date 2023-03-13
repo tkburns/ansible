@@ -285,7 +285,7 @@ function Install-WSLAnsible {
       sudo apt-get update -y '&&' `
       sudo apt-get install -y curl git software-properties-common python3 python3-pip ansible
 
-    # install ansible command completion?
+    # install ansible command completion
     wsl $wslDistroArg -- `
       python3 -m pip install --user argcomplete '&&' `
       activate-global-python-argcomplete --user
@@ -296,6 +296,7 @@ function Install-WSLAnsible {
     }
 }
 
+# TODO - remove pywinrm
 function Uninstall-WSLAnsible {
     [CmdletBinding(DefaultParameterSetName = 'Default')]
     param (
@@ -412,6 +413,7 @@ function Invoke-WSLAnsiblePlaybook {
     # run the playbook
     wsl $wslDistroArg -- ansible-pull linux/wsl-playbook.yml `
       --url https://github.com/tkburns/ansible.git `
+      --ask-become-pass `
       $varsFlag `
       $ansibleExtraArgs
 }

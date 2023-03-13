@@ -9,6 +9,13 @@
     # gpg_key_email
     # gpg_key_passphrase
 
+  pre_tasks:
+    - name: Update Apt Cache
+      become: true
+      apt:
+        update_cache: true
+      tags: [terminal, shell]
+
   tasks:
     - name: Setup Terminal
       import_tasks: tasks/terminal.yml
