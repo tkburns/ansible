@@ -2,20 +2,27 @@
   tags: [js, nodejs, shell]
   block:
     - name: Install NVM
-      shell: >
+      shell: |
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
       args:
         creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
 
-    # TODO - check if node is already installed??
     - name: Install Node
-      shell: ". /root/.bashrc && nvm install {{ item }}"
+      shell: |
+        export NVM_DIR="{{ ansible_env.HOME }}/.nvm"
+        . "$NVM_DIR/nvm.sh" && nvm install {{ item }}
       with_items:
-        - '--lts'
+        - 'lts/*'
         - node
+      register: install_node
 
-# TODO - run only if node is installed
+    - name: Set Default Node Version
+      shell: |
+        export NVM_DIR="{{ ansible_env.HOME }}/.nvm"
+        . "$NVM_DIR/nvm.sh" && nvm alias default 'lts/*'
+
 - name: Setup Typescript
+  when: install_node is succeeded
   tags: [ts, shell]
   block:
     - name: Install Typescript
