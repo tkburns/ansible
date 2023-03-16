@@ -10,7 +10,8 @@
     - name: Install Node
       shell: |
         export NVM_DIR="{{ ansible_env.HOME }}/.nvm"
-        . "$NVM_DIR/nvm.sh" && nvm install {{ item }}
+        . "$NVM_DIR/nvm.sh"
+        nvm install {{ item }}
       with_items:
         - 'lts/*'
         - node
@@ -19,16 +20,29 @@
     - name: Set Default Node Version
       shell: |
         export NVM_DIR="{{ ansible_env.HOME }}/.nvm"
-        . "$NVM_DIR/nvm.sh" && nvm alias default 'lts/*'
+        . "$NVM_DIR/nvm.sh"
+        nvm alias default 'lts/*'
+
+    - name: Get Node Version
+      shell: |
+        export NVM_DIR="{{ ansible_env.HOME }}/.nvm"
+        . "$NVM_DIR/nvm.sh"
+        nvm version default
+      register: node_version
 
 - name: Setup Typescript
-  when: install_node is succeeded
+  when: node_version is succeeded
   tags: [ts, shell]
+  environment:
+    PATH: "{{ ansible_env.HOME }}/.nvm/versions/node/{{ node_version.stdout }}/bin:{{ ansible_env.PATH }}"
   block:
     - name: Install Typescript
       npm:
-        name: typescript
+        name: "{{ item }}"
         global: yes
+      with_items:
+        - typescript
+        - ts-node
 
 - name: Setup Python
   tags: [python, shell]
