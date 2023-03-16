@@ -1,5 +1,6 @@
 - name: Setup SSH key
   tags: [ssh]
+  when: ssh_key_passphrase is defined
   community.crypto.openssh_keypair:
     path: ~/.ssh/{{ ssh_key_filename }}
     passphrase: '{{ ssh_key_passphrase }}'
@@ -8,7 +9,7 @@
 
 - name: Setup GPG key
   tags: [gpg]
-  when: gpg_key_email is defined
+  when: (gpg_key_email is defined) and (gpg_key_passphrase is defined)
   block:
     - name: Check for existing key
       shell: gpg --list-secret-keys {{ gpg_key_email }}
