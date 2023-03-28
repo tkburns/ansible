@@ -1,7 +1,7 @@
 - name: Add Github's ssh key
   shell: |
-    if ! grep -q 'github.com' "/etc/ssh/ssh_known_hosts"; then
-      ssh-keyscan -H github.com >> /etc/ssh/ssh_known_hosts
+    if ! grep -q 'github.com' "~/.ssh/known_hosts"; then
+      ssh-keyscan -H github.com >> ~/.ssh/known_hosts
     fi
 
 - name: Create project folder

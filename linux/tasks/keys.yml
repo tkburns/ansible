@@ -40,7 +40,7 @@
       when: (gpg_existing is succeeded) or (gpg_new is succeeded)
       block:
         - name: Get GPG key id
-          shell: gpg --list-keys {{ gpg_key_email }} | awk -F'[ /]' '/sub/ { print $5 }'
+          shell: gpg --list-secret-keys --keyid-format=long {{ gpg_key_email }} | awk -F'[ /]' '/sec/ { print $5 }'
           changed_when: False
           register: gpg_key_id
         - name: Get GPG public key
