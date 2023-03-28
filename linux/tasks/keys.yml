@@ -52,6 +52,7 @@
           git_config:
             name: '{{ item.name }}'
             value: '{{ item.value }}'
+            scope: global
           with_items:
             - name: user.signingkey
               value: '{{ gpg_key_id.stdout }}'
