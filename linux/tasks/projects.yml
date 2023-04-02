@@ -7,7 +7,7 @@
 - name: Create project folder
   file:
     path: '{{ project_dir }}'
-    state: folder
+    state: directory
   tags: [folder-tree]
 
 - name: Clone Projects
