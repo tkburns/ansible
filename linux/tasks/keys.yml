@@ -88,5 +88,5 @@
 
       {% endif %}
       ==========
-  when: (ssh_key is succeeded) or (gpg_public_key is succeeded)
+  when: (ssh_key.public_key is defined) or (gpg_public_key.stdout is defined)
 
