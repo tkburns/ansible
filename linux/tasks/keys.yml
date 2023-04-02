@@ -77,12 +77,12 @@
       ==========
       Setup the new keys in GitHub
 
-      {% if ssh_key is succeeded %}
+      {% if ssh_key.public_key is defined %}
       SSH Key (public key):
       {{ ssh_key.public_key }}
 
       {% endif %}
-      {% if gpg_public_key is succeeded %}
+      {% if gpg_public_key.stdout is defined %}
       GPG Key (public key):
       {{ gpg_public_key.stdout }}
 
