@@ -11,9 +11,16 @@
   tags: [folder-tree]
 
 - name: Clone Projects
-  git:
-    repo: 'git@github.com:tkburns/{{ item.repo }}.git'
-    dest: '{{ project_dir }}/{{ item.name }}'
+  block:
+    - name: Check if already cloned
+      stat:
+        path: '{{ project_dir }}/{{ item.name }}/.git'
+      register: git_folder
+    - name: Clone repo
+      git:
+        repo: 'git@github.com:tkburns/{{ item.repo }}.git'
+        dest: '{{ project_dir }}/{{ item.name }}'
+      when: not git_folder.stat.exists
   with_items:
     - name: opus
       repo: opus-prototype
@@ -31,9 +38,17 @@
       tags: [folder-tree]
 
     - name: Clone Gists
-      git:
-        repo: 'git@github.com:{{ item.gist_id }}.git'
-        dest: '{{ project_dir }}/gists/{{ item.name }}'
+      block:
+        - name: Check if already cloned
+          stat:
+            path: '{{ project_dir }}/{{ item.name }}/.git'
+          register: git_folder
+        - name: Clone repo
+          git:
+            repo: 'git@github.com:{{ item.gist_id }}.git'
+            dest: '{{ project_dir }}/gists/{{ item.name }}'
+          when: not git_folder.stat.exists
+
       with_items:
         - name: rs-playground
           gist_id: 64fc340a54f36220d7f11d2cc8214408
