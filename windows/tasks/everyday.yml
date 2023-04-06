@@ -25,15 +25,3 @@
       register: musescore
       tags: [application]
 
-    - name: Mention MuseHub
-      pause:
-        seconds: 1
-        prompt: |
-          ===============
-            [MuseHub] Muse Hub can be installed manually here:
-            https://www.musehub.com
-          ===============
-      when: musescore is success
-      tags: [manual-step]
-
-
