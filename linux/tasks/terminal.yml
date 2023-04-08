@@ -7,14 +7,20 @@
 
 - name: Install main dev packages
   package:
-    name: [git, neovim]
+    name: [git, neovim, gh]
     state: present
+  become: true
+  tags: [shell]
+
+- name: Add apt repositories
+  apt_repository:
+    repo: ppa:wslutilities/wslu
   become: true
   tags: [shell]
 
 - name: Install common CLI utils
   package:
-    name: [jq, fzf, silversearcher-ag, tree]
+    name: [wslu, jq, fzf, silversearcher-ag, tree]
     state: present
   become: true
   tags: [shell]
